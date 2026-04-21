@@ -1,0 +1,44 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        default_batch_fetch_size: 100
+    open-in-view: false
+  sql:
+    init:
+      mode: always
+  devtools:
+    restart:
+      enabled: true
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+
+app:
+  datasource:
+    host: ${APP_DB_HOST:localhost}
+    port: ${APP_DB_PORT:3406}
+    username: ${APP_DB_USERNAME:test}
+    password: ${APP_DB_PASSWORD:test}
+    driver-class-name: org.mariadb.jdbc.Driver
+    default-project: ${APP_DB_DEFAULT_PROJECT:default}
+    projects:
+      default: ${APP_DB_DEFAULT_NAME:app_default_db}
+  cookie:
+    secure: false
+
+supabase:
+  url: ${SUPABASE_URL:}
+  key: ${SUPABASE_ANON_KEY:}
+  bucket: uploads
+  enabled: false
+
+file:
+  upload-dir: ./uploads
