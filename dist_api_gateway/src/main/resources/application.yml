@@ -1,0 +1,122 @@
+dotenv:
+  enabled: true  # .env파일설정.    KAKAO_CLIENT_ID 직접 쓰려면 없어도됨.
+
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 단일 파일 최대 크기
+      max-request-size: 50MB   # 전체 요청 최대 크기
+
+  datasource:
+    url: jdbc:mariadb://localhost:3406/test
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: test
+    password: test
+
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    defer-datasource-initialization: true # data-users.sql 실행 시점 조정 (DDL 후 실행)
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        default_batch_fetch_size: 100
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always
+      data-locations:
+        - classpath:data-users.sql
+        - classpath:data-files.sql
+        - classpath:data-community.sql
+        - classpath:data-comment.sql
+        - classpath:data-rooms.sql
+
+  devtools:
+    livereload:
+      enabled: true
+    freemarker:
+      cache: false
+    restart:
+      enabled: true
+
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}  # 카카오 REST API 키
+            client-secret: ${KAKAO_CLIENT_SECRET}  # 카카오 Client Secret
+            client-authentication-method: client_secret_post  # 카카오는 POST 방식으로 Secret 전달
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao # 카카오 로그인 후 리디렉트될 주소
+            authorization-grant-type: authorization_code  # OAuth2 인증 방식 (코드 방식)
+            scope:
+              - profile_nickname
+              - account_email  # 요청할 사용자 정보 (이메일, 닉네임)
+
+
+          google: # ✅ 구글 OAuth2 추가
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}   #구글은 인가코드- access_token 과정에서 내부적으로 secret을 필요로 함.
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            scope:
+              - profile       #카카오는 profile안의 여러정보 다 따로 지정해줘야하지만 구글은 profile만 지정하면 됨.
+              - email
+            authorization-grant-type: authorization_code
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize  # 카카오 로그인 URL  (인증서버)
+            token-uri: https://kauth.kakao.com/oauth/token  # 액세스 토큰 요청 URL (인증서버)
+            user-info-uri: https://kapi.kakao.com/v2/user/me  # 사용자 정보 요청 URL (리소스서버)
+            user-name-attribute: id  # OAuth2User에서 사용할 식별 값. 왠만하면 oauth에서 제공하는대로사용하자. 카카오는 id, 구글은 sub
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+
+jwt:
+  secret : ${JWT_SECRET_KEY}
+  #키는 길이만 충분하고 노출되지만 않으면 됨. gpt한테 만들어하던가 내가 막 타자 아무렇게 해도됨
+  expiration_access:  1800000 #30분 테스트용 1800000    30초=30000
+  expiration_refresh : 14400000   #테스트용 4시간
+
+# 쿠키 보안 설정 (로컬: HTTP이므로 false)
+app:
+  cookie:
+    secure: false
+
+# Supabase Storage 설정 (로컬: 비활성화)
+supabase:
+  url: ${SUPABASE_URL:}
+  key: ${SUPABASE_ANON_KEY:}
+  bucket: uploads
+  enabled: false  # 로컬은 기존 로컬 저장 방식 사용
+
+# Actuator 설정 (서버 상태 모니터링)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics  # 노출할 엔드포인트
+  endpoint:
+    health:
+      show-details: when_authorized  # 인증된 사용자만 상세 정보
+
+# Swagger 설정
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html  # Swagger UI 경로
+    tags-sorter: alpha      # 태그 알파벳 순 정렬
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+# 파일 업로드 경로 (로컬개발환경)
+file:
+  upload-dir: ./uploads    # 프로젝트 루트/uploads
+

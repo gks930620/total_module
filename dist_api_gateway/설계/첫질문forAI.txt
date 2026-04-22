@@ -1,0 +1,6 @@
+우선 프로젝트 전체적으로 분석해봐
+CSR 프로젝트 , spring 이있고 restAPI 하게 만들었음. 근데 몇몇 화면용 그냥 Controller있음 html부분에서 매번 ajax fetch등으로 spring restAPI에게 데이터 전달하는 형태임..
+기본 기능인 community, file, 댓글, editor이미지 등이있고 채팅, security가 적용된상태임
+한번 전체적으로 코드레벨까지 살펴봐
+
+이후 개발은 csr_프로젝트_구조정리.md 원칙에 맞게 개발해줘

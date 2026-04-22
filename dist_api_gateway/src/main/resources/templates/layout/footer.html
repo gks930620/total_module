@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="footerStyle">
+    <style>
+        /* Footer Styles */
+        .app-footer {
+            background-color: #424242;
+            color: #e0e0e0;
+            margin-top: auto;
+            border-top: 1px solid #616161;
+            padding: 24px 0;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <footer class="app-footer" th:fragment="footer">
+        <div class="footer-container">
+            <p>© 2025 Dollcatcher. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
+

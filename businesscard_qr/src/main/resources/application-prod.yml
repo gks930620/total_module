@@ -1,0 +1,114 @@
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 단일 파일 최대 크기
+      max-request-size: 50MB   # 전체 요청 최대 크기
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mariadb://localhost:3306/your_database}
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:your_username}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true  # JPA 초기화 후 SQL 실행
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+        default_batch_fetch_size: 100
+        # MySQL 8.x dialect
+        dialect: org.hibernate.dialect.MySQLDialect
+        # 스키마 생성 전 FK 체크 비활성화
+        "[javax.persistence.schema-generation.scripts.action]": drop-and-create
+    open-in-view: false
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+  sql:
+    init:
+      mode: never  # 운영에서 SQL 초기화 비활성화
+
+  devtools:
+    livereload:
+      enabled: false
+    restart:
+      enabled: false
+
+  thymeleaf:
+    cache: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            redirect-uri: ${APP_BASE_URL:http://localhost:8080}/login/oauth2/code/kakao
+            authorization-grant-type: authorization_code
+            scope:
+              - profile_nickname
+              - account_email
+
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${APP_BASE_URL:http://localhost:8080}/login/oauth2/code/google
+            scope:
+              - profile
+              - email
+            authorization-grant-type: authorization_code
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type: WARN
+    com.example: INFO
+
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  expiration_access: 1800000   # 30분
+  expiration_refresh: 14400000 # 4시간
+
+# 쿠키 보안 설정 (운영: HTTPS이므로 true)
+app:
+  cookie:
+    secure: true
+
+# Supabase Storage 설정 (운영: 활성화)
+supabase:
+  url: ${SUPABASE_URL}
+  key: ${SUPABASE_ANON_KEY}
+  bucket: uploads
+  enabled: true  # 운영에서 Supabase 사용
+
+# Actuator 설정 (서버 상태 모니터링)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# 파일 업로드 경로
+file:
+  upload-dir: /app/uploads
+

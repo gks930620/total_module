@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 수정 - 커뮤니티</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Quill.js CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+    <th:block th:replace="~{layout/header :: headerStyle}"></th:block>
+    <th:block th:replace="~{layout/footer :: footerStyle}"></th:block>
+
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 500;
+            color: #212121;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header .material-icons {
+            font-size: 32px;
+            color: #6200ea;
+        }
+
+        .write-form {
+            background: white;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #424242;
+            margin-bottom: 8px;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #d32f2f;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: 'Roboto', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: #6200ea;
+        }
+
+        .form-help {
+            font-size: 12px;
+            color: #757575;
+            margin-top: 6px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: #6200ea;
+            color: white;
+            box-shadow: 0 2px 4px rgba(98, 0, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: #5000ca;
+            box-shadow: 0 4px 8px rgba(98, 0, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: #424242;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
+        }
+
+        /* Quill 에디터 고정 크기 및 스크롤 */
+        #editor {
+            height: 400px;
+        }
+
+        .ql-container {
+            height: calc(100% - 42px);
+            overflow-y: auto;
+        }
+
+        .ql-editor {
+            min-height: 100%;
+        }
+
+        /* 로딩 상태 */
+        #loadingState {
+            text-align: center;
+            padding: 60px 20px;
+            color: #757575;
+        }
+
+        /* 첨부파일 관련 스타일 */
+        .file-upload-area {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #6200ea;
+            background-color: #f5f5f5;
+        }
+
+        .file-upload-area .material-icons {
+            font-size: 36px;
+            color: #9e9e9e;
+            margin-bottom: 8px;
+        }
+
+        .file-upload-area p {
+            font-size: 14px;
+            color: #757575;
+            margin: 4px 0;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .uploaded-files {
+            margin-top: 16px;
+        }
+
+        .uploaded-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .uploaded-file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .uploaded-file-info .material-icons {
+            color: #757575;
+        }
+
+        .remove-file-btn {
+            background: none;
+            border: none;
+            color: #d32f2f;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .remove-file-btn .material-icons {
+            font-size: 20px;
+        }
+
+        .existing-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 3px solid #2196f3;
+        }
+
+        .existing-file .uploaded-file-info {
+            color: #1565c0;
+        }
+
+        .file-deleted {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body>
+    <th:block th:replace="~{layout/header :: header}"></th:block>
+
+    <main class="main-content">
+        <!-- 로딩 상태 -->
+        <div id="loadingState">
+            <div style="font-size: 14px;">로딩 중...</div>
+        </div>
+
+        <!-- 수정 폼 -->
+        <div id="editForm" style="display: none;">
+            <div class="page-header">
+                <h1>
+                    <span class="material-icons">edit</span>
+                    게시글 수정
+                </h1>
+            </div>
+
+            <form class="write-form" onsubmit="return handleSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label required" for="title">제목</label>
+                    <input type="text" class="form-input" id="title" placeholder="제목을 입력하세요" required maxlength="200">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">내용</label>
+                    <div id="editor" style="height: 400px; background: white;"></div>
+                    <div class="form-help">최소 5자 이상 작성해주세요.</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">첨부파일 관리</label>
+
+                    <!-- 기존 첨부파일 -->
+                    <div id="existingFiles" style="margin-bottom: 16px;"></div>
+
+                    <!-- 새 파일 추가 -->
+                    <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                        <span class="material-icons">attach_file</span>
+                        <p>클릭하여 파일을 추가하세요</p>
+                        <p style="font-size: 12px; margin-top: 8px;">모든 파일 형식 가능 (이미지, PDF, 문서 등)</p>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" multiple onchange="handleFileSelect(event)">
+                    <div class="uploaded-files" id="newFiles"></div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="#" onclick="goBack()" class="btn btn-secondary">
+                        <span class="material-icons">close</span>
+                        취소
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons">check</span>
+                        수정 완료
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/footer :: footer}"></th:block>
+    <th:block th:replace="~{layout/header :: headerScript}"></th:block>
+
+    <!-- Quill.js Script -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <script>
+        let quill;
+        let currentCommunityId = null;
+        let existingFiles = []; // 기존 첨부파일 목록
+        let newFiles = []; // 새로 추가할 파일 목록
+        let deletedFileIds = []; // 삭제할 파일 ID 목록
+
+        // 페이지 로드 시
+        document.addEventListener('DOMContentLoaded', () => {
+            // URL에서 게시글 ID 추출
+            const urlParams = new URLSearchParams(window.location.search);
+            currentCommunityId = urlParams.get('id');
+
+            if (!currentCommunityId) {
+                alert('잘못된 접근입니다.');
+                location.href = '/community';
+                return;
+            }
+
+            checkLoginAndLoadData();
+        });
+
+        // 로그인 확인 및 데이터 로드
+        function checkLoginAndLoadData() {
+            authFetch('/api/users/me')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Not logged in');
+                })
+                .then(userInfo => {
+                    console.log('✅ 로그인 상태 확인');
+                    initQuillEditor();
+                    loadCommunityData();
+                })
+                .catch(err => {
+                    console.log('❌ 비로그인 상태');
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/login';
+                });
+        }
+
+        // Quill 에디터 초기화
+        function initQuillEditor() {
+            quill = new Quill('#editor', {
+                theme: 'snow',
+                placeholder: '내용을 입력하세요...',
+                modules: {
+                    toolbar: {
+                        container: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            ['link', 'image'],
+                            ['clean']
+                        ],
+                        handlers: {
+                            image: imageHandler
+                        }
+                    }
+                }
+            });
+        }
+
+        // 에디터 내 이미지 업로드 핸들러
+        function imageHandler() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+
+            input.onchange = async () => {
+                const file = input.files[0];
+                if (!file) return;
+
+                if (!file.type.startsWith('image/')) {
+                    alert('이미지 파일만 업로드 가능합니다.');
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기가 너무 큽니다!\n\n최대 10MB까지 업로드 가능합니다.\n현재 파일 크기: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('files', file);
+                    formData.append('refId', 0);
+                    formData.append('refType', 'COMMUNITY');
+                    formData.append('usage', 'IMAGES');
+
+                    const response = await authFetch('/api/files', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 413) {
+                            throw new Error('파일 크기가 너무 큽니다! 최대 10MB까지 업로드 가능합니다.');
+                        }
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || '이미지 업로드 실패');
+                    }
+
+                    const result = await response.json();
+                    // ApiResponse 구조: { data: [...], message: "..." }
+                    const uploadedUrls = result.data || result;
+                    const imageUrl = Array.isArray(uploadedUrls) ? uploadedUrls[0] : uploadedUrls;
+
+                    const range = quill.getSelection(true);
+                    const index = range ? range.index : quill.getLength();
+                    quill.insertEmbed(index, 'image', imageUrl);
+                    quill.setSelection(index + 1);
+
+                    console.log('✅ 에디터 이미지 업로드 성공:', imageUrl);
+
+                } catch (error) {
+                    console.error('❌ 이미지 업로드 실패:', error);
+                    alert(error.message || '이미지 업로드에 실패했습니다.');
+                }
+            };
+        }
+
+        // 기존 첨부파일 표시
+        function displayExistingFiles() {
+            const container = document.getElementById('existingFiles');
+            container.innerHTML = '';
+
+            if (existingFiles.length === 0) {
+                return;
+            }
+
+            existingFiles.forEach(file => {
+                const isDeleted = deletedFileIds.includes(file.fileId);
+                const fileDiv = document.createElement('div');
+                fileDiv.className = isDeleted ? 'existing-file file-deleted' : 'existing-file';
+                fileDiv.id = `existing-file-${file.fileId}`;
+
+                let icon = 'insert_drive_file';
+                const fileName = file.originalFileName.toLowerCase();
+                if (fileName.match(/\.(jpg|jpeg|png|gif|bmp)$/)) icon = 'image';
+                else if (fileName.match(/\.pdf$/)) icon = 'picture_as_pdf';
+                else if (fileName.match(/\.(doc|docx)$/)) icon = 'description';
+                else if (fileName.match(/\.(xls|xlsx)$/)) icon = 'table_chart';
+
+                fileDiv.innerHTML = `
+                    <div class="uploaded-file-info">
+                        <span class="material-icons">${icon}</span>
+                        <span>${file.originalFileName} (${formatFileSize(file.fileSize)}) ${isDeleted ? '- 삭제 예정' : ''}</span>
+                    </div>
+                    <button type="button" class="remove-file-btn" onclick="toggleDeleteFile(${file.fileId})" ${isDeleted ? 'style="color: #4caf50;"' : ''}>
+                        <span class="material-icons">${isDeleted ? 'undo' : 'delete'}</span>
+                    </button>
+                `;
+                container.appendChild(fileDiv);
+            });
+        }
+
+        // 기존 파일 삭제 토글
+        function toggleDeleteFile(fileId) {
+            const index = deletedFileIds.indexOf(fileId);
+            if (index > -1) {
+                // 삭제 취소
+                deletedFileIds.splice(index, 1);
+            } else {
+                // 삭제 표시
+                deletedFileIds.push(fileId);
+            }
+            displayExistingFiles();
+        }
+
+        // 새 파일 선택
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            newFiles = [...newFiles, ...files];
+            displayNewFiles();
+            event.target.value = ''; // 같은 파일 다시 선택 가능하도록
+        }
+
+        // 새 파일 목록 표시
+        function displayNewFiles() {
+            const container = document.getElementById('newFiles');
+            container.innerHTML = '';
+
+            if (newFiles.length === 0) return;
+
+            newFiles.forEach((file, index) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'uploaded-file';
+
+                let icon = 'insert_drive_file';
+                if (file.type.startsWith('image/')) icon = 'image';
+                else if (file.type.includes('pdf')) icon = 'picture_as_pdf';
+                else if (file.type.includes('word') || file.type.includes('document')) icon = 'description';
+                else if (file.type.includes('excel') || file.type.includes('sheet')) icon = 'table_chart';
+
+                fileDiv.innerHTML = `
+                    <div class="uploaded-file-info">
+                        <span class="material-icons">${icon}</span>
+                        <span>${file.name} (${formatFileSize(file.size)})</span>
+                    </div>
+                    <button type="button" class="remove-file-btn" onclick="removeNewFile(${index})">
+                        <span class="material-icons">close</span>
+                    </button>
+                `;
+                container.appendChild(fileDiv);
+            });
+        }
+
+        // 새 파일 제거
+        function removeNewFile(index) {
+            newFiles.splice(index, 1);
+            displayNewFiles();
+        }
+
+        // 파일 크기 포맷
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // 기존 첨부파일 로드 (별도 API)
+        async function loadExistingFiles() {
+            try {
+                const response = await fetch(`/api/files?refId=${currentCommunityId}&refType=COMMUNITY&usage=ATTACHMENT`);
+
+                if (!response.ok) {
+                    console.log('첨부파일 없음 또는 조회 실패');
+                    existingFiles = [];
+                    return;
+                }
+
+                const result = await response.json();
+                const files = result.data || [];
+                console.log('✅ 기존 첨부파일 데이터:', files);
+
+                // API 응답을 displayExistingFiles에서 사용하는 형식으로 변환
+                existingFiles = files.map(file => ({
+                    fileId: file.fileId,
+                    originalFileName: file.originalFileName,
+                    fileSize: file.fileSize,
+                    downloadUrl: file.downloadUrl
+                }));
+
+                displayExistingFiles();
+            } catch (error) {
+                console.error('❌ 첨부파일 로드 에러:', error);
+                existingFiles = [];
+            }
+        }
+
+        // 게시글 데이터 로드
+        async function loadCommunityData() {
+            try {
+                const response = await fetch(`/api/communities/${currentCommunityId}`);
+
+                if (!response.ok) {
+                    throw new Error('게시글을 불러오는데 실패했습니다.');
+                }
+
+                const result = await response.json();
+                const data = result.data; // ApiResponse에서 data 추출
+                console.log('✅ 게시글 데이터:', data);
+
+                // 제목 설정
+                document.getElementById('title').value = data.title;
+
+                // 내용 설정 (Quill 에디터에)
+                quill.root.innerHTML = data.content;
+
+                // 기존 첨부파일 별도 로드
+                await loadExistingFiles();
+
+                // 로딩 숨기고 폼 표시
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('editForm').style.display = 'block';
+
+            } catch (error) {
+                console.error('❌ 에러 발생:', error);
+                alert('게시글을 불러오는데 실패했습니다.');
+                location.href = '/community';
+            }
+        }
+
+        // 폼 제출
+        async function handleSubmit(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('title').value.trim();
+            const content = quill.root.innerHTML.trim();
+            const textContent = quill.getText().trim();
+
+            // 유효성 검사
+            if (!title) {
+                alert('제목을 입력해주세요.');
+                return false;
+            }
+
+            if (!textContent || textContent.length < 5) {
+                alert('내용을 5자 이상 입력해주세요.');
+                return false;
+            }
+
+            try {
+                console.log('📝 게시글 수정 시작...');
+
+                const updateData = {
+                    title: title,
+                    content: content
+                };
+
+                const response = await authFetch(`/api/communities/${currentCommunityId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(updateData)
+                });
+
+                console.log('📡 응답 상태:', response.status);
+
+                if (!response.ok) {
+                    const error = await handleApiError(response);
+                    console.error('❌ 게시글 수정 실패:', error);
+                    showApiError(error);
+                    return false;
+                }
+
+                console.log('✅ 게시글 수정 성공!');
+
+                // 2. 기존 파일 삭제 처리
+                if (deletedFileIds.length > 0) {
+                    console.log(`🗑️ 파일 ${deletedFileIds.length}개 삭제 중...`);
+                    for (const fileId of deletedFileIds) {
+                        try {
+                            const deleteResponse = await authFetch(`/api/files/${fileId}`, {
+                                method: 'DELETE',
+                                credentials: 'include'
+                            });
+                            if (deleteResponse.ok) {
+                                console.log(`✅ 파일 삭제 성공: ${fileId}`);
+                            }
+                        } catch (error) {
+                            console.warn(`⚠️ 파일 삭제 실패: ${fileId}`, error);
+                        }
+                    }
+                }
+
+                // 3. 새 파일 업로드
+                if (newFiles.length > 0) {
+                    console.log(`📎 새 파일 ${newFiles.length}개 업로드 중...`);
+
+                    const formData = new FormData();
+                    newFiles.forEach(file => {
+                        formData.append('files', file);
+                    });
+                    formData.append('refId', currentCommunityId);
+                    formData.append('refType', 'COMMUNITY');
+                    formData.append('usage', 'ATTACHMENT');
+
+                    try {
+                        const fileResponse = await authFetch('/api/files', {
+                            method: 'POST',
+                            credentials: 'include',
+                            body: formData
+                        });
+
+                        if (fileResponse.ok) {
+                            console.log('✅ 새 파일 업로드 성공!');
+                        } else {
+                            console.warn('⚠️ 파일 업로드 실패');
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ 파일 업로드 에러:', error);
+                    }
+                }
+
+                alert('게시글이 수정되었습니다.');
+                window.location.href = `/community/detail?id=${currentCommunityId}`;
+
+            } catch (error) {
+                console.error('❌ 에러 발생:', error);
+                alert(error.message || '게시글 수정에 실패했습니다.');
+            }
+
+            return false;
+        }
+
+        // 뒤로가기
+        function goBack() {
+            if (confirm('수정을 취소하시겠습니까?')) {
+                window.location.href = `/community/detail?id=${currentCommunityId}`;
+            }
+        }
+    </script>
+</body>
+</html>
+

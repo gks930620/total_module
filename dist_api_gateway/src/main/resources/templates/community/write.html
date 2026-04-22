@@ -1,0 +1,542 @@
+h<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 작성 - 커뮤니티</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Quill.js CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+    <th:block th:replace="~{layout/header :: headerStyle}"></th:block>
+    <th:block th:replace="~{layout/footer :: footerStyle}"></th:block>
+
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 500;
+            color: #212121;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header .material-icons {
+            font-size: 32px;
+            color: #6200ea;
+        }
+
+        .write-form {
+            background: white;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #424242;
+            margin-bottom: 8px;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #d32f2f;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: 'Roboto', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: #6200ea;
+        }
+
+        .form-textarea {
+            min-height: 300px;
+            resize: vertical;
+        }
+
+        .form-help {
+            font-size: 12px;
+            color: #757575;
+            margin-top: 6px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #6200ea;
+            background-color: #f5f5f5;
+        }
+
+        .file-upload-area .material-icons {
+            font-size: 48px;
+            color: #9e9e9e;
+            margin-bottom: 8px;
+        }
+
+        .file-upload-area p {
+            font-size: 14px;
+            color: #757575;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .uploaded-files {
+            margin-top: 16px;
+        }
+
+        .uploaded-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .uploaded-file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .uploaded-file-info .material-icons {
+            color: #757575;
+        }
+
+        .remove-file-btn {
+            background: none;
+            border: none;
+            color: #d32f2f;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .remove-file-btn .material-icons {
+            font-size: 20px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: #6200ea;
+            color: white;
+            box-shadow: 0 2px 4px rgba(98, 0, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: #5000ca;
+            box-shadow: 0 4px 8px rgba(98, 0, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: #424242;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
+        }
+
+        /* Quill 에디터 고정 크기 및 스크롤 */
+        #editor {
+            height: 600px;
+        }
+
+        .ql-container {
+            height: calc(100% - 42px); /* 툴바 높이 제외 */
+            overflow-y: auto; /* 세로 스크롤 활성화 */
+        }
+
+        .ql-editor {
+            min-height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <th:block th:replace="~{layout/header :: header}"></th:block>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>
+                <span class="material-icons">edit</span>
+                게시글 작성
+            </h1>
+        </div>
+
+        <form class="write-form" onsubmit="return handleSubmit(event)">
+            <div class="form-group">
+                <label class="form-label required" for="title">제목</label>
+                <input type="text" class="form-input" id="title" placeholder="제목을 입력하세요" required maxlength="200">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label required">내용</label>
+                <!-- Quill 에디터 컨테이너 -->
+                <div id="editor" style="height: 400px; background: white;"></div>
+                <div class="form-help">최소 10자 이상 작성해주세요. (에디터 툴바의 이미지 버튼으로 본문에 이미지 삽입 가능)</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">첨부파일 (선택)</label>
+                <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                    <span class="material-icons">attach_file</span>
+                    <p>클릭하여 파일을 첨부하세요</p>
+                    <p style="font-size: 12px; margin-top: 8px;">모든 파일 형식 가능 (이미지, PDF, 문서 등)</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input" multiple onchange="handleFileSelect(event)">
+                <div class="uploaded-files" id="uploadedFiles"></div>
+            </div>
+
+            <div class="form-actions">
+            <div class="form-actions">
+                <a href="/community" class="btn btn-secondary">
+                    <span class="material-icons">close</span>
+                    취소
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons">check</span>
+                    등록
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <th:block th:replace="~{layout/footer :: footer}"></th:block>
+    <th:block th:replace="~{layout/header :: headerScript}"></th:block>
+
+    <!-- Quill.js Script -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <script>
+        let quill; // Quill 에디터 인스턴스
+        let attachedFiles = []; // 첨부파일 배열
+
+        // 페이지 로드 시 로그인 확인 및 에디터 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLoginAndRedirect();
+            initQuillEditor();
+        });
+
+        // 로그인 확인 (API 호출로 정확하게 체크)
+        function checkLoginAndRedirect() {
+            authFetch('/api/users/me')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Not logged in');
+                })
+                .then(result => {
+                    const userInfo = result.data; // ApiResponse에서 data 추출
+                    console.log('✅ 로그인 상태 확인: true, 사용자:', userInfo.nickname);
+                })
+                .catch(err => {
+                    console.log('❌ 비로그인 상태 - 로그인 페이지로 이동');
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/login';
+                });
+        }
+
+        // Quill 에디터 초기화
+        function initQuillEditor() {
+            quill = new Quill('#editor', {
+                theme: 'snow',
+                placeholder: '내용을 입력하세요...',
+                modules: {
+                    toolbar: {
+                        container: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            ['link', 'image'], // 이미지 버튼 추가
+                            ['clean']
+                        ],
+                        handlers: {
+                            image: imageHandler // 커스텀 이미지 핸들러
+                        }
+                    }
+                }
+            });
+        }
+
+        // 에디터 내 이미지 업로드 핸들러
+        function imageHandler() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+
+            input.onchange = async () => {
+                const file = input.files[0];
+                if (!file) return;
+
+                // 이미지 파일 검증
+                if (!file.type.startsWith('image/')) {
+                    alert('이미지 파일만 업로드 가능합니다.');
+                    return;
+                }
+
+                // 파일 크기 체크 (10MB 제한)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기가 너무 큽니다!\n\n최대 10MB까지 업로드 가능합니다.\n현재 파일 크기: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+                    return;
+                }
+
+                try {
+                    // 임시 ID로 서버에 업로드 (refId는 게시글 작성 시 업데이트)
+                    const formData = new FormData();
+                    formData.append('files', file);
+                    formData.append('refId', 0); // 임시 ID
+                    formData.append('refType', 'COMMUNITY');
+                    formData.append('usage', 'IMAGES');
+
+                    const response = await authFetch('/api/files', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 413) {
+                            throw new Error('파일 크기가 너무 큽니다! 최대 10MB까지 업로드 가능합니다.');
+                        }
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || '이미지 업로드 실패');
+                    }
+
+                    const result = await response.json();
+                    // ApiResponse 구조: { data: [...], message: "..." }
+                    const uploadedUrls = result.data || result;
+                    const imageUrl = Array.isArray(uploadedUrls) ? uploadedUrls[0] : uploadedUrls;
+
+                    // 에디터에 이미지 URL 삽입
+                    const range = quill.getSelection(true);
+                    const index = range ? range.index : quill.getLength();
+                    quill.insertEmbed(index, 'image', imageUrl);
+                    quill.setSelection(index + 1);
+
+                    console.log('✅ 에디터 이미지 업로드 성공:', imageUrl);
+
+                } catch (error) {
+                    console.error('❌ 이미지 업로드 실패:', error);
+                    alert(error.message || '이미지 업로드에 실패했습니다.');
+                }
+            };
+        }
+
+        // 첨부파일 선택 핸들러
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+
+            // 모든 파일 타입 허용
+            attachedFiles = [...attachedFiles, ...files];
+            displayUploadedFiles();
+
+            // input 초기화 (같은 파일 다시 선택 가능하도록)
+            event.target.value = '';
+        }
+
+        // 첨부파일 목록 표시
+        function displayUploadedFiles() {
+            const container = document.getElementById('uploadedFiles');
+            container.innerHTML = '';
+
+            if (attachedFiles.length === 0) return;
+
+            attachedFiles.forEach((file, index) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'uploaded-file';
+
+                // 파일 타입에 따른 아이콘
+                let icon = 'insert_drive_file';
+                if (file.type.startsWith('image/')) icon = 'image';
+                else if (file.type.includes('pdf')) icon = 'picture_as_pdf';
+                else if (file.type.includes('word') || file.type.includes('document')) icon = 'description';
+                else if (file.type.includes('excel') || file.type.includes('sheet')) icon = 'table_chart';
+
+                fileDiv.innerHTML = `
+                    <div class="uploaded-file-info">
+                        <span class="material-icons">${icon}</span>
+                        <span>${file.name} (${formatFileSize(file.size)})</span>
+                    </div>
+                    <button type="button" class="remove-file-btn" onclick="removeFile(${index})">
+                        <span class="material-icons">close</span>
+                    </button>
+                `;
+                container.appendChild(fileDiv);
+            });
+        }
+
+        // 첨부파일 제거
+        function removeFile(index) {
+            attachedFiles.splice(index, 1);
+            displayUploadedFiles();
+        }
+
+        // 파일 크기 포맷
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('title').value.trim();
+            // Quill 에디터에서 HTML 내용 가져오기
+            const content = quill.root.innerHTML.trim();
+            // 순수 텍스트만 가져오기 (공백 체크용)
+            const textContent = quill.getText().trim();
+
+            // 유효성 검사
+            if (!title) {
+                alert('제목을 입력해주세요.');
+                return false;
+            }
+
+            if (!textContent || textContent.length < 5) {
+                alert('내용을 5자 이상 입력해주세요.');
+                return false;
+            }
+
+            try {
+                console.log('📝 게시글 작성 시작...');
+
+                // 1. 게시글 먼저 등록
+                const communityData = {
+                    title: title,
+                    content: content // HTML 포함된 내용
+                };
+
+                console.log('📤 게시글 데이터:', communityData);
+
+                // credentials: 'include'로 쿠키를 자동으로 전달 (Authorization 헤더 불필요)
+                const response = await authFetch('/api/communities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include', // 쿠키 자동 전달
+                    body: JSON.stringify(communityData)
+                });
+
+                console.log('📡 응답 상태:', response.status);
+
+                if (!response.ok) {
+                    const error = await handleApiError(response);
+                    console.error('❌ 게시글 작성 실패:', error);
+                    showApiError(error);
+                    return false;
+                }
+
+
+                const result = await response.json();
+                const communityId = result.data; // ApiResponse에서 data 추출
+                console.log('✅ 게시글 작성 성공! ID:', communityId);
+
+                // 2. 첨부파일이 있으면 업로드
+                if (attachedFiles.length > 0) {
+                    console.log(`📎 첨부파일 ${attachedFiles.length}개 업로드 중...`);
+
+                    const formData = new FormData();
+                    attachedFiles.forEach(file => {
+                        formData.append('files', file);
+                    });
+                    formData.append('refId', communityId);
+                    formData.append('refType', 'COMMUNITY');
+                    formData.append('usage', 'ATTACHMENT'); // 첨부파일은 ATTACHMENT
+
+                    const fileResponse = await authFetch('/api/files', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    });
+
+                    if (!fileResponse.ok) {
+                        console.warn('⚠️ 파일 업로드 실패 (게시글은 등록됨)');
+                    } else {
+                        console.log('✅ 첨부파일 업로드 성공!');
+                    }
+                }
+
+                alert('게시글이 등록되었습니다.');
+                window.location.href = '/community';
+
+            } catch (error) {
+                console.error('❌ 에러 발생:', error);
+                alert(error.message || '게시글 등록에 실패했습니다.');
+            }
+
+            return false;
+        }
+    </script>
+</body>
+</html>
+

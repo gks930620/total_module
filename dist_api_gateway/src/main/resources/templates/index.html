@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot Boilerplate</title>
+
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Material Design CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <th:block th:replace="~{layout/header :: headerStyle}"></th:block>
+    <th:block th:replace="~{layout/footer :: footerStyle}"></th:block>
+
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #6200ea 0%, #3700b3 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 32px;
+        }
+
+        .feature-section {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 500;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            background-color: #6200ea;
+            color: white;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .feature-icon .material-icons {
+            font-size: 32px;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: white;
+            color: #6200ea;
+            padding: 14px 32px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .cta-button:hover {
+            background-color: #f5f5f5;
+        }
+
+        .cta-button-outline {
+            display: inline-block;
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 12px 30px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 16px;
+            margin-left: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .cta-button-outline:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+<th:block th:replace="~{layout/header :: header}"></th:block>
+
+<main>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <h1 class="hero-title">Spring Boot Boilerplate</h1>
+        <p class="hero-subtitle">JWT 인증, OAuth2, 게시판, 파일 업로드가 포함된 스타터 템플릿</p>
+        <a href="/community" class="cta-button">커뮤니티 바로가기</a>
+        <a href="/swagger-ui.html" class="cta-button-outline" target="_blank">API 문서</a>
+    </section>
+
+    <!-- Features Section -->
+    <section class="feature-section">
+        <h2 class="section-title">주요 기능</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="material-icons">security</span>
+                </div>
+                <h3 class="feature-title">Security & JWT</h3>
+                <p class="feature-desc">Spring Security 기반 인증/인가, JWT 토큰 방식의 stateless 인증 구현</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="material-icons">login</span>
+                </div>
+                <h3 class="feature-title">OAuth2 소셜 로그인</h3>
+                <p class="feature-desc">카카오, 구글 OAuth2 로그인 지원. 추가 Provider 확장 가능</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="material-icons">forum</span>
+                </div>
+                <h3 class="feature-title">커뮤니티 게시판</h3>
+                <p class="feature-desc">게시글 CRUD, 댓글 기능, 페이징, QueryDSL 동적 검색</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="material-icons">cloud_upload</span>
+                </div>
+                <h3 class="feature-title">파일 업로드</h3>
+                <p class="feature-desc">로컬/Supabase 전략 패턴 파일 저장, 이미지 리사이징 지원</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="material-icons">api</span>
+                </div>
+                <h3 class="feature-title">Swagger API 문서</h3>
+                <p class="feature-desc">OpenAPI 3.0 기반 자동 API 문서화, 테스트 UI 제공</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="material-icons">rocket_launch</span>
+                </div>
+                <h3 class="feature-title">Docker & 배포</h3>
+                <p class="feature-desc">Dockerfile 제공, Railway 등 클라우드 배포 가이드 포함</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<th:block th:replace="~{layout/footer :: footer}"></th:block>
+</body>
+</html>
+

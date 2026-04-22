@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Material Design CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <th:block th:replace="~{layout/header :: headerStyle}"></th:block>
+    <th:block th:replace="~{layout/footer :: footerStyle}"></th:block>
+
+    <style>
+        .signup-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 40px;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            background-color: #6200ea;
+            color: white;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .logo-icon .material-icons {
+            font-size: 36px;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-section {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper .material-icons {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 20px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 12px 12px 44px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #6200ea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 8px;
+        }
+
+        .submit-btn:hover {
+            background-color: #5000d7;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .login-link a {
+            color: #6200ea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .signup-container {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <th:block th:replace="~{layout/header :: header}"></th:block>
+
+    <main class="main-content">
+        <div class="signup-container">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <span class="material-icons">person_add</span>
+                </div>
+                <h1 class="logo-title">회원가입</h1>
+            </div>
+
+            <div id="signupForm" class="form-section">
+                <form onsubmit="handleSignup(event)">
+                    <div class="input-group">
+                        <label for="signupUsername">아이디</label>
+                        <div class="input-wrapper">
+                            <span class="material-icons">person</span>
+                            <input type="text" id="signupUsername" class="input-field" placeholder="아이디를 입력하세요" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="signupPassword">비밀번호</label>
+                        <div class="input-wrapper">
+                            <span class="material-icons">lock</span>
+                            <input type="password" id="signupPassword" class="input-field" placeholder="비밀번호 (6자 이상)" required minlength="6">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="signupPasswordConfirm">비밀번호 확인</label>
+                        <div class="input-wrapper">
+                            <span class="material-icons">lock</span>
+                            <input type="password" id="signupPasswordConfirm" class="input-field" placeholder="비밀번호를 다시 입력하세요" required minlength="6">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="signupEmail">이메일</label>
+                        <div class="input-wrapper">
+                            <span class="material-icons">email</span>
+                            <input type="email" id="signupEmail" class="input-field" placeholder="이메일을 입력하세요" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="signupNickname">닉네임</label>
+                        <div class="input-wrapper">
+                            <span class="material-icons">badge</span>
+                            <input type="text" id="signupNickname" class="input-field" placeholder="닉네임을 입력하세요" required>
+                        </div>
+                    </div>
+
+                    <div id="signupError" class="error-message"></div>
+
+                    <button type="submit" class="submit-btn">회원가입</button>
+                </form>
+            </div>
+
+            <div class="login-link">
+                <span>이미 계정이 있으신가요? </span>
+                <a href="/login">로그인</a>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/footer :: footer}"></th:block>
+    <th:block th:replace="~{layout/header :: headerScript}"></th:block>
+
+    <script>
+        async function handleSignup(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('signupUsername').value;
+            const password = document.getElementById('signupPassword').value;
+            const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+            const email = document.getElementById('signupEmail').value;
+            const nickname = document.getElementById('signupNickname').value;
+            const errorDiv = document.getElementById('signupError');
+
+            // 비밀번호 확인
+            if (password !== passwordConfirm) {
+                errorDiv.textContent = '비밀번호가 일치하지 않습니다.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        email: email,
+                        nickname: nickname
+                    })
+                });
+
+                if (response.ok) {
+                    alert('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');
+                    window.location.href = '/login?username=' + encodeURIComponent(username);
+                } else {
+                    const errorData = await response.json();
+                    // 유효성 검증 에러인 경우 상세 메시지 표시
+                    if (errorData.errors && errorData.errors.length > 0) {
+                        const errorMessages = errorData.errors.map(e => e.message).join('\n');
+                        errorDiv.textContent = errorMessages;
+                    } else {
+                        errorDiv.textContent = errorData.message || '회원가입에 실패했습니다. 입력 정보를 확인해주세요.';
+                    }
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                console.log('Signup error:', error);
+                errorDiv.textContent = '회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                errorDiv.classList.add('show');
+            }
+        }
+    </script>
+</body>
+</html>
