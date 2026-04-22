@@ -13,12 +13,12 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -33,77 +33,75 @@ public class BusinessCardController {
     private final BusinessCardService businessCardService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BusinessCardResponse>>> getBusinessCards(
-            @RequestHeader("X-User-Id") String userId
-    ) {
-        List<BusinessCardResponse> data = businessCardService.getBusinessCards(userId);
-        return ResponseEntity.ok(ApiResponse.success("명함 목록 조회 성공", data));
+    public ResponseEntity<ApiResponse<List<BusinessCardResponse>>> getBusinessCards(Authentication authentication) {
+        List<BusinessCardResponse> data = businessCardService.getBusinessCards(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Business card list loaded", data));
     }
 
     @GetMapping("/{cardId}")
     public ResponseEntity<ApiResponse<BusinessCardResponse>> getBusinessCard(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String cardId
     ) {
-        BusinessCardResponse data = businessCardService.getBusinessCard(userId, cardId);
-        return ResponseEntity.ok(ApiResponse.success("명함 조회 성공", data));
+        BusinessCardResponse data = businessCardService.getBusinessCard(authentication.getName(), cardId);
+        return ResponseEntity.ok(ApiResponse.success("Business card loaded", data));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<BusinessCardIdResponse>> createBusinessCard(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @RequestPart("payload") String payload,
             @RequestPart(value = "businessCardImage", required = false) MultipartFile businessCardImage
     ) {
-        BusinessCardIdResponse data = businessCardService.createBusinessCard(userId, payload, businessCardImage);
-        return ResponseEntity.ok(ApiResponse.success("명함 생성 성공", data));
+        BusinessCardIdResponse data = businessCardService.createBusinessCard(authentication.getName(), payload, businessCardImage);
+        return ResponseEntity.ok(ApiResponse.success("Business card created", data));
     }
 
     @PutMapping(value = "/{cardId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<BusinessCardIdResponse>> updateBusinessCard(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String cardId,
             @RequestPart("payload") String payload,
             @RequestPart(value = "businessCardImage", required = false) MultipartFile businessCardImage
     ) {
-        BusinessCardIdResponse data = businessCardService.updateBusinessCard(userId, cardId, payload, businessCardImage);
-        return ResponseEntity.ok(ApiResponse.success("명함 수정 성공", data));
+        BusinessCardIdResponse data = businessCardService.updateBusinessCard(authentication.getName(), cardId, payload, businessCardImage);
+        return ResponseEntity.ok(ApiResponse.success("Business card updated", data));
     }
 
     @DeleteMapping("/{cardId}")
     public ResponseEntity<ApiResponse<Void>> deleteBusinessCard(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String cardId
     ) {
-        businessCardService.deleteBusinessCard(userId, cardId);
-        return ResponseEntity.ok(ApiResponse.success("명함 삭제 성공", null));
+        businessCardService.deleteBusinessCard(authentication.getName(), cardId);
+        return ResponseEntity.ok(ApiResponse.success("Business card deleted", null));
     }
 
     @PostMapping("/{cardId}/view-count")
     public ResponseEntity<ApiResponse<Void>> incrementViewCount(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String cardId
     ) {
-        businessCardService.incrementViewCount(userId, cardId);
-        return ResponseEntity.ok(ApiResponse.success("조회수 증가 성공", null));
+        businessCardService.incrementViewCount(authentication.getName(), cardId);
+        return ResponseEntity.ok(ApiResponse.success("View count increased", null));
     }
 
     @GetMapping("/{cardId}/vcf-download-url")
     public ResponseEntity<ApiResponse<DownloadUrlResponse>> getVcfDownloadUrl(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String cardId
     ) {
-        DownloadUrlResponse data = businessCardService.generateVcfDownloadUrl(userId, cardId);
-        return ResponseEntity.ok(ApiResponse.success("VCF 다운로드 URL 발급 성공", data));
+        DownloadUrlResponse data = businessCardService.generateVcfDownloadUrl(authentication.getName(), cardId);
+        return ResponseEntity.ok(ApiResponse.success("VCF download URL issued", data));
     }
 
     @GetMapping("/{cardId}/image-download-url")
     public ResponseEntity<ApiResponse<DownloadUrlResponse>> getImageDownloadUrl(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String cardId
     ) {
-        DownloadUrlResponse data = businessCardService.generateImageDownloadUrl(userId, cardId);
-        return ResponseEntity.ok(ApiResponse.success("이미지 다운로드 URL 발급 성공", data));
+        DownloadUrlResponse data = businessCardService.generateImageDownloadUrl(authentication.getName(), cardId);
+        return ResponseEntity.ok(ApiResponse.success("Image download URL issued", data));
     }
 
     @GetMapping("/{cardId}/downloads/vcf")

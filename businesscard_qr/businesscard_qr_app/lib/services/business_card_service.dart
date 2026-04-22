@@ -6,27 +6,17 @@ import '../api_config.dart';
 import '../models/business_card.dart';
 
 class BusinessCardService {
-  Future<void> syncUser(kakao.User kakaoUser) async {
-    final userId = 'kakao_${kakaoUser.id}';
-    final response = await http.post(
-      ApiConfig.uri('/api/users/sync'),
-      headers: _headers(),
-      body: jsonEncode({
-        'id': userId,
-        'email': kakaoUser.kakaoAccount?.email,
-        'nickname': kakaoUser.kakaoAccount?.profile?.nickname,
-        'provider': 'kakao',
-      }),
-    );
+  static String? _backendAccessToken;
+  static DateTime? _backendAccessTokenExpiresAt;
 
-    _extractData(response);
+  Future<void> syncUser(kakao.User _) async {
+    await _ensureBackendAccessToken(forceRefresh: true);
   }
 
   Future<List<BusinessCard>> getAllBusinessCards() async {
-    final userId = await _requireCurrentUserId();
     final response = await http.get(
       ApiConfig.uri('/api/business-cards'),
-      headers: _headers(userId: userId, includeJsonContentType: false),
+      headers: await _authorizedHeaders(includeJsonContentType: false),
     );
 
     final data = _extractData(response);
@@ -41,15 +31,14 @@ class BusinessCardService {
   }
 
   Future<BusinessCard> getBusinessCard(String id) async {
-    final userId = await _requireCurrentUserId();
     final response = await http.get(
       ApiConfig.uri('/api/business-cards/$id'),
-      headers: _headers(userId: userId, includeJsonContentType: false),
+      headers: await _authorizedHeaders(includeJsonContentType: false),
     );
 
     final data = _extractData(response);
     if (data is! Map<String, dynamic>) {
-      throw Exception('명함 응답 형식이 올바르지 않습니다.');
+      throw Exception('Invalid business card response format.');
     }
     return BusinessCard.fromJson(data);
   }
@@ -58,7 +47,6 @@ class BusinessCardService {
     required BusinessCard businessCard,
     XFile? businessCardImage,
   }) async {
-    final userId = await _requireCurrentUserId();
     final isUpdate = businessCard.id != null && businessCard.id!.isNotEmpty;
     final path = isUpdate
         ? '/api/business-cards/${businessCard.id}'
@@ -69,7 +57,7 @@ class BusinessCardService {
       ApiConfig.uri(path),
     );
     request.headers.addAll(
-      _headers(userId: userId, includeJsonContentType: false),
+      await _authorizedHeaders(includeJsonContentType: false),
     );
 
     final payload = Map<String, dynamic>.from(businessCard.toJson())
@@ -90,43 +78,39 @@ class BusinessCardService {
     final data = _extractData(response);
 
     if (data is! Map<String, dynamic> || data['id'] == null) {
-      throw Exception('저장 응답 형식이 올바르지 않습니다.');
+      throw Exception('Invalid save response format.');
     }
     return data['id'].toString();
   }
 
   Future<void> deleteBusinessCard(String id) async {
-    final userId = await _requireCurrentUserId();
     final response = await http.delete(
       ApiConfig.uri('/api/business-cards/$id'),
-      headers: _headers(userId: userId, includeJsonContentType: false),
+      headers: await _authorizedHeaders(includeJsonContentType: false),
     );
     _extractData(response);
   }
 
   Future<void> incrementViewCount(String id) async {
-    final userId = await _requireCurrentUserId();
     final response = await http.post(
       ApiConfig.uri('/api/business-cards/$id/view-count'),
-      headers: _headers(userId: userId, includeJsonContentType: false),
+      headers: await _authorizedHeaders(includeJsonContentType: false),
     );
     _extractData(response);
   }
 
   Future<String> generateVcfDownloadToken(String cardId) async {
-    final userId = await _requireCurrentUserId();
     final response = await http.get(
       ApiConfig.uri('/api/business-cards/$cardId/vcf-download-url'),
-      headers: _headers(userId: userId, includeJsonContentType: false),
+      headers: await _authorizedHeaders(includeJsonContentType: false),
     );
     return _extractDownloadUrl(response);
   }
 
   Future<String> generateImageDownloadToken(String cardId) async {
-    final userId = await _requireCurrentUserId();
     final response = await http.get(
       ApiConfig.uri('/api/business-cards/$cardId/image-download-url'),
-      headers: _headers(userId: userId, includeJsonContentType: false),
+      headers: await _authorizedHeaders(includeJsonContentType: false),
     );
     return _extractDownloadUrl(response);
   }
@@ -134,23 +118,74 @@ class BusinessCardService {
   String _extractDownloadUrl(http.Response response) {
     final data = _extractData(response);
     if (data is! Map<String, dynamic> || data['url'] == null) {
-      throw Exception('다운로드 URL 응답 형식이 올바르지 않습니다.');
+      throw Exception('Invalid download URL response format.');
     }
     return data['url'].toString();
   }
 
-  Map<String, String> _headers({
-    String? userId,
+  Future<Map<String, String>> _authorizedHeaders({
     bool includeJsonContentType = true,
-  }) {
-    final headers = <String, String>{'Accept': 'application/json'};
+  }) async {
+    final accessToken = await _ensureBackendAccessToken();
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $accessToken',
+    };
     if (includeJsonContentType) {
       headers['Content-Type'] = 'application/json';
     }
-    if (userId != null && userId.isNotEmpty) {
-      headers['X-User-Id'] = userId;
-    }
     return headers;
+  }
+
+  Future<String> _ensureBackendAccessToken({bool forceRefresh = false}) async {
+    final now = DateTime.now();
+    final isTokenUsable =
+        !forceRefresh &&
+        _backendAccessToken != null &&
+        _backendAccessTokenExpiresAt != null &&
+        _backendAccessTokenExpiresAt!.isAfter(now.add(const Duration(seconds: 10)));
+
+    if (isTokenUsable) {
+      return _backendAccessToken!;
+    }
+
+    final kakaoAccessToken = await _requireKakaoAccessToken();
+    final response = await http.post(
+      ApiConfig.uri('/api/auth/kakao'),
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'kakaoAccessToken': kakaoAccessToken}),
+    );
+
+    final data = _extractData(response);
+    if (data is! Map<String, dynamic>) {
+      throw Exception('Invalid auth response format.');
+    }
+
+    final accessToken = data['accessToken']?.toString();
+    final expiresIn = int.tryParse(data['expiresIn']?.toString() ?? '');
+    if (accessToken == null || accessToken.isEmpty || expiresIn == null) {
+      throw Exception('Auth token payload is invalid.');
+    }
+
+    _backendAccessToken = accessToken;
+    _backendAccessTokenExpiresAt = now.add(Duration(seconds: expiresIn));
+    return _backendAccessToken!;
+  }
+
+  Future<String> _requireKakaoAccessToken() async {
+    if (!await kakao.AuthApi.instance.hasToken()) {
+      throw Exception('Login is required.');
+    }
+
+    final token = await kakao.TokenManagerProvider.instance.manager.getToken();
+    final accessToken = token?.accessToken;
+    if (accessToken == null || accessToken.isEmpty) {
+      throw Exception('Kakao access token is missing.');
+    }
+    return accessToken;
   }
 
   dynamic _extractData(http.Response response) {
@@ -160,39 +195,19 @@ class BusinessCardService {
     try {
       body = jsonDecode(bodyText) as Map<String, dynamic>;
     } catch (_) {
-      throw Exception('서버 응답을 읽을 수 없습니다. (${response.statusCode})');
+      throw Exception('Server response is not valid JSON. (${response.statusCode})');
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
-        body['message']?.toString() ?? '요청 실패 (${response.statusCode})',
+        body['message']?.toString() ?? 'Request failed (${response.statusCode})',
       );
     }
 
     if (body['success'] != true) {
-      throw Exception(body['message']?.toString() ?? '요청 실패');
+      throw Exception(body['message']?.toString() ?? 'Request failed');
     }
 
     return body['data'];
-  }
-
-  Future<String> _requireCurrentUserId() async {
-    final userId = await _getCurrentUserId();
-    if (userId == null || userId.isEmpty) {
-      throw Exception('로그인이 필요합니다.');
-    }
-    return userId;
-  }
-
-  Future<String?> _getCurrentUserId() async {
-    try {
-      if (await kakao.AuthApi.instance.hasToken()) {
-        final user = await kakao.UserApi.instance.me();
-        return 'kakao_${user.id}';
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
   }
 }

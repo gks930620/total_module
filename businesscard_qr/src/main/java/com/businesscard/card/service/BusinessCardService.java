@@ -218,7 +218,7 @@ public class BusinessCardService {
 
     private void validateUserId(String userId) {
         if (userId == null || userId.isBlank()) {
-            throw new BusinessRuleException("X-User-Id 헤더는 필수입니다.");
+            throw new BusinessRuleException("Authenticated user id is required.");
         }
     }
 
