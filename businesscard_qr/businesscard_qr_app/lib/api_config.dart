@@ -3,7 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
   static String get baseUrl {
-    final configured = dotenv.env['BACKEND_BASE_URL'];
+    final configured =
+        dotenv.env['GATEWAY_BASE_URL'] ?? dotenv.env['BACKEND_BASE_URL'];
     if (configured != null && configured.isNotEmpty) {
       return configured;
     }

@@ -1,0 +1,14 @@
+.git
+.gitignore
+.idea
+.gradle
+**/.gradle
+**/build
+**/out
+**/.dart_tool
+**/node_modules
+**/.env
+**/.env.*
+uploads
+businesscard_qr/businesscard_qr_app
+dist_api_gateway/frontend
