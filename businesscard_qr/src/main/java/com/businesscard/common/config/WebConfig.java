@@ -37,6 +37,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         String[] origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
+                .map(this::stripWrappingQuotes)
                 .filter(origin -> !origin.isBlank())
                 .toArray(String[]::new);
 
@@ -47,5 +48,19 @@ public class WebConfig implements WebMvcConfigurer {
                 .exposedHeaders("Set-Cookie", "Authorization")
                 .allowCredentials(true)
                 .maxAge(3600);
+    }
+
+    private String stripWrappingQuotes(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.length() >= 2) {
+            boolean wrappedInDoubleQuotes = value.startsWith("\"") && value.endsWith("\"");
+            boolean wrappedInSingleQuotes = value.startsWith("'") && value.endsWith("'");
+            if (wrappedInDoubleQuotes || wrappedInSingleQuotes) {
+                return value.substring(1, value.length() - 1).trim();
+            }
+        }
+        return value;
     }
 }
