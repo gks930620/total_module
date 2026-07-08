@@ -18,13 +18,62 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // .env 파일 로드
-  await dotenv.load(fileName: ".env");
+  // .env 파일 로드 (실패해도 앱은 뜨도록 방어)
+  String? kakaoNativeAppKey;
+  try {
+    await dotenv.load(fileName: ".env");
+    kakaoNativeAppKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
+  } catch (e) {
+    print('[BOOT] .env 로드 실패: $e');
+  }
+
+  if (kakaoNativeAppKey == null || kakaoNativeAppKey.isEmpty) {
+    // 설정 누락 시 크래시 대신 에러 화면 표시
+    runApp(
+      const ConfigErrorApp(
+        message: 'KAKAO_NATIVE_APP_KEY가 설정되지 않았습니다 (.env 확인)',
+      ),
+    );
+    return;
+  }
 
   // 카카오 SDK 초기화
-  kakao.KakaoSdk.init(nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY']!);
+  kakao.KakaoSdk.init(nativeAppKey: kakaoNativeAppKey);
 
   runApp(const BusinessCardApp());
+}
+
+/// 필수 설정이 없을 때 크래시 대신 보여주는 간단한 에러 화면
+class ConfigErrorApp extends StatelessWidget {
+  final String message;
+
+  const ConfigErrorApp({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '명함 QR코드',
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class BusinessCardApp extends StatelessWidget {
@@ -205,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 명함 목록 화면으로 이동
       print('[LOGIN] 명함 목록 화면으로 이동 중...');
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -217,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (error, stackTrace) {
       print('[LOGIN] 카카오 로그인 실패: $error');
       print('[LOGIN] 스택트레이스: $stackTrace');
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('로그인 실패: $error')));
@@ -262,6 +311,7 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
       print('[UI] 명함 목록 로딩 시작');
       final cards = await _businessCardService.getAllBusinessCards();
       print('[UI] 명함 목록 로딩 성공: ${cards.length}개');
+      if (!mounted) return;
       setState(() {
         _businessCards = cards;
         _isLoading = false;
@@ -272,14 +322,13 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
       print('[UI] 에러: $e');
       print('[UI] 스택트레이스: $stackTrace');
       print('[UI] ========================');
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('명함을 불러오는데 실패했습니다: $e')));
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('명함을 불러오는데 실패했습니다: $e')));
     }
   }
 
@@ -312,14 +361,14 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                 ),
               );
 
-              if (confirm == true && mounted) {
+              if (confirm == true && context.mounted) {
                 try {
                   // 카카오 로그아웃
                   await kakao.UserApi.instance.logout();
                   print('[LOGOUT] 카카오 로그아웃 성공');
 
                   // 로그인 화면으로 이동
-                  if (mounted) {
+                  if (context.mounted) {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -329,7 +378,7 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                   }
                 } catch (e) {
                   print('[LOGOUT] 로그아웃 실패: $e');
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(SnackBar(content: Text('로그아웃 실패: $e')));
@@ -398,11 +447,13 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                       builder: (context) => const BusinessCardFormScreen(),
                     ),
                   );
+                  if (!mounted) return;
                   if (result is String) {
                     // 새로 등록된 명함 ID를 받아서 해당 명함만 조회 후 리스트에 추가
                     try {
                       final newCard = await _businessCardService
                           .getBusinessCard(result);
+                      if (!mounted) return;
                       setState(() {
                         _businessCards.insert(0, newCard); // 최상단에 추가
                       });
@@ -465,6 +516,7 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                                         ),
                                   ),
                                 );
+                                if (!mounted) return;
                                 if (result is BusinessCard) {
                                   // 수정된 명함 데이터를 받아서 해당 항목만 업데이트
                                   setState(() {
@@ -505,67 +557,6 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _loginWithKakao(BuildContext context) async {
-    try {
-      print('[LOGIN] 카카오 로그인 시작');
-
-      // 카카오 로그인
-      bool isInstalled = await kakao.isKakaoTalkInstalled();
-      print('[LOGIN] 카카오톡 설치 여부: $isInstalled');
-
-      kakao.OAuthToken token;
-      if (isInstalled) {
-        print('[LOGIN] 카카오톡으로 로그인 시도');
-        token = await kakao.UserApi.instance.loginWithKakaoTalk();
-      } else {
-        print('[LOGIN] 카카오 계정으로 로그인 시도');
-        token = await kakao.UserApi.instance.loginWithKakaoAccount();
-      }
-
-      print('[LOGIN] 카카오 로그인 성공: ${token.accessToken.substring(0, 10)}...');
-
-      // 카카오 사용자 정보 가져오기
-      print('[LOGIN] 사용자 정보 가져오는 중...');
-      kakao.User user = await kakao.UserApi.instance.me();
-      print('[LOGIN] 사용자 정보 획득 성공: ${user.id}');
-
-      print('[LOGIN] 백엔드 사용자 정보 동기화 중...');
-      await _syncUserToBackend(user);
-      print('[LOGIN] 백엔드 동기화 완료');
-
-      // 명함 목록 화면으로 이동
-      print('[LOGIN] 명함 목록 화면으로 이동 중...');
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const BusinessCardListScreen(),
-          ),
-        );
-        print('[LOGIN] 네비게이션 완료');
-      }
-    } catch (error, stackTrace) {
-      print('[LOGIN] 카카오 로그인 실패: $error');
-      print('[LOGIN] 스택트레이스: $stackTrace');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('로그인 실패: $error')));
-      }
-    }
-  }
-
-  Future<void> _syncUserToBackend(kakao.User kakaoUser) async {
-    try {
-      await _businessCardService.syncUser(kakaoUser);
-
-      print('사용자 정보 백엔드 동기화 완료');
-    } catch (e) {
-      print('백엔드 사용자 동기화 실패: $e');
-      throw Exception('사용자 정보 동기화에 실패했습니다: $e');
-    }
   }
 }
 
@@ -890,7 +881,9 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
                   Navigator.pop(context);
                   final image = await _picker.pickImage(
                     source: ImageSource.camera,
+                    imageQuality: 85, // iOS에서 HEIC 대신 JPEG로 재인코딩
                   );
+                  if (!mounted) return;
                   if (image != null) {
                     setState(() {
                       _businessCardImage = image;
@@ -905,7 +898,9 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
                   Navigator.pop(context);
                   final image = await _picker.pickImage(
                     source: ImageSource.gallery,
+                    imageQuality: 85, // iOS에서 HEIC 대신 JPEG로 재인코딩
                   );
+                  if (!mounted) return;
                   if (image != null) {
                     setState(() {
                       _businessCardImage = image;
@@ -1174,13 +1169,14 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
                       BusinessCardFormScreen(businessCard: widget.businessCard),
                 ),
               );
-              if (result == true && mounted) {
+              if (result == true && context.mounted) {
                 // 수정 완료 후 현재 화면을 새로운 데이터로 완전히 교체
                 _wasModified = true;
                 try {
                   final updatedCard = await _businessCardService
                       .getBusinessCard(widget.businessCard.id!);
                   print('[View] 수정된 데이터 로드 완료');
+                  if (!context.mounted) return;
                   // 기존 상세 화면을 제거하고, 수정된 데이터로 새 상세 화면 열기
                   // updatedCard를 목록 화면에 전달하여 부분 업데이트
                   Navigator.pop(context, updatedCard); // 수정된 명함 데이터 전달
@@ -1193,6 +1189,7 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
                   );
                 } catch (e) {
                   print('[View] 데이터 새로고침 실패: $e');
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text('데이터 새로고침 실패: $e')));
@@ -1325,12 +1322,14 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
                     onPressed: () async {
                       try {
                         final vcfUrl = await _getVcfDownloadUrl();
+                        if (!mounted) return;
                         _showQrCodeDialog(
                           url: vcfUrl,
                           title: 'VCF 다운로드 QR코드',
                           description: 'QR코드를 스캔하여 연락처 정보를 다운로드하세요 (5분간 유효)',
                         );
                       } catch (e) {
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('QR코드 생성 실패: $e')),
                         );
@@ -1387,12 +1386,14 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
                       onPressed: () async {
                         try {
                           final imageUrl = await _getImageDownloadUrl();
+                          if (!mounted) return;
                           _showQrCodeDialog(
                             url: imageUrl,
                             title: '이미지 다운로드 QR코드',
                             description: 'QR코드를 스캔하여 명함 이미지를 다운로드하세요 (5분간 유효)',
                           );
                         } catch (e) {
+                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('QR코드 생성 실패: $e')),
                           );

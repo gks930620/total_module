@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart';
@@ -12,6 +12,8 @@ class ImageCacheService {
 
   static const String _cacheFolderName = 'image_cache';
   static const Duration _cacheExpiration = Duration(days: 7);
+  static const Duration _downloadTimeout = Duration(seconds: 60);
+  static const String _timeoutMessage = '서버 응답이 없습니다. 잠시 후 다시 시도해주세요.';
 
   /// 캐시된 이미지 파일 경로를 반환하거나 네트워크에서 다운로드
   Future<File?> getCachedImage(String imageUrl) async {
@@ -38,9 +40,11 @@ class ImageCacheService {
   }
 
   /// 특정 이미지를 디바이스에 다운로드 (갤러리에 저장)
+  // TODO: UI 연결 예정
   Future<String> downloadImageToGallery(String imageUrl, String fileName) async {
     try {
-      final response = await http.get(Uri.parse(imageUrl));
+      final response =
+          await http.get(Uri.parse(imageUrl)).timeout(_downloadTimeout);
       if (response.statusCode != 200) {
         throw Exception('이미지 다운로드 실패: ${response.statusCode}');
       }
@@ -62,6 +66,8 @@ class ImageCacheService {
       await file.writeAsBytes(response.bodyBytes);
 
       return file.path;
+    } on TimeoutException {
+      throw Exception(_timeoutMessage);
     } catch (e) {
       throw Exception('이미지 다운로드 실패: $e');
     }
@@ -97,7 +103,8 @@ class ImageCacheService {
   /// 네트워크에서 이미지 다운로드 및 캐시
   Future<File?> _downloadAndCacheImage(String imageUrl, File cacheFile) async {
     try {
-      final response = await http.get(Uri.parse(imageUrl));
+      final response =
+          await http.get(Uri.parse(imageUrl)).timeout(_downloadTimeout);
       if (response.statusCode == 200) {
         await cacheFile.writeAsBytes(response.bodyBytes);
         return cacheFile;
