@@ -12,7 +12,7 @@
 
   <!-- 제목 -->
   <text x="40" y="44" font-size="24" font-weight="bold" fill="#1a1a2e">total_module 서버 아키텍처 — 모듈 = Railway 서비스, 각자 자기 URL 직행</text>
-  <text x="40" y="72" font-size="14" fill="#666">2026-07-08 확정 (설계/아키텍처_방향결정.md). 게이트웨이 없음 — 클라이언트가 해당 모듈 서비스의 공개 도메인을 직접 호출한다.</text>
+  <text x="40" y="72" font-size="14" fill="#666">2026-07-08 확정 (total_설계/아키텍처_방향결정.md). 게이트웨이 없음 — 클라이언트가 해당 모듈 서비스의 공개 도메인을 직접 호출한다.</text>
 
   <!-- ═══ 클라이언트 영역 ═══ -->
   <rect x="60" y="100" width="800" height="120" rx="10" fill="#eef4ff" stroke="#7aa2e8" stroke-width="1.5"/>
@@ -116,8 +116,8 @@
   <text x="920" y="482" font-size="13" fill="#333">④ 배포 적합화: env 주입 · PORT · /healthz · 디스크 저장 금지</text>
   <text x="920" y="506" font-size="13" fill="#333">⑤ Railway 서비스 생성 + APP_MODULE + Generate Domain</text>
   <text x="920" y="530" font-size="13" fill="#333">⑥ 클라이언트 base URL = 그 도메인</text>
-  <text x="920" y="560" font-size="12" fill="#666">상세: 설계/아키텍처_방향결정.md §3,</text>
-  <text x="920" y="578" font-size="12" fill="#666">웹이면 설계/웹프로젝트_통합_설계기준.md</text>
+  <text x="920" y="560" font-size="12" fill="#666">상세: total_설계/아키텍처_방향결정.md §3,</text>
+  <text x="920" y="578" font-size="12" fill="#666">웹이면 total_설계/웹프로젝트_통합_설계기준.md</text>
 
   <rect x="900" y="618" width="400" height="168" rx="10" fill="#fff5f5" stroke="#c0392b" stroke-width="1.5"/>
   <text x="920" y="646" font-size="15" font-weight="bold" fill="#c0392b">이 구조의 핵심 이유</text>
