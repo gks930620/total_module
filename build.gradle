@@ -11,5 +11,5 @@ subprojects {
 tasks.register('bootJarAll') {
     group = 'build'
     description = 'Builds bootJar artifacts for all backend modules.'
-    dependsOn(':businesscard_qr:bootJar', ':dist_api_gateway:bootJar')
+    dependsOn(':businesscard_qr:bootJar')
 }

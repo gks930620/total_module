@@ -1,4 +1,3 @@
 rootProject.name = 'total_module'
 
 include 'businesscard_qr'
-include 'dist_api_gateway'

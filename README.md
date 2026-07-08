@@ -1,71 +1,46 @@
 # total_module
 
-> **⚠️ 2026-07-08 아키텍처 방향 전환**: dist_api_gateway는 **은퇴 예정**이며, 각 모듈이 자기 공개 URL로 직접 트래픽을 받는 방향으로 확정됨.
-> 기준 문서: [설계/아키텍처_방향결정.md](설계/아키텍처_방향결정.md) — 아래 게이트웨이 관련 내용은 청산 작업 완료 시 삭제 예정.
+로컬에서 완성한 스프링부트 프로젝트들을 모아 **하나의 Railway 프로젝트로 통합 배포**하는 저장소.
+아키텍처 기준: [설계/아키텍처_방향결정.md](설계/아키텍처_방향결정.md)
 
-`total_module` is a monorepo with two backend modules:
-
-- `businesscard_qr`: main business-card API server
-- `dist_api_gateway`: minimal gateway server that proxies to `businesscard_qr`
-
-## Railway deployment
-
-This repo uses a single root `Dockerfile`.  
-Each Railway service selects which jar to run with `APP_MODULE`.
-
-### Railway setup order
-
-1. Create service `businesscard_qr` from this repository.
-2. In `Settings > Root Directory`, set `/` (repo root).
-3. Set Variables:
-   - `APP_MODULE=businesscard_qr`
-   - `APP_JWT_SECRET=<32+ chars>`
-   - `SPRING_DATASOURCE_URL=...`
-   - `SPRING_DATASOURCE_USERNAME=...`
-   - `SPRING_DATASOURCE_PASSWORD=...`
-   - `SPRING_JPA_DDL_AUTO=update`
-   - `APP_STORAGE_TYPE=db`  # 업로드 이미지를 Railway MySQL에 저장(재배포에도 보존). 기본값도 `db`.
-4. Deploy and copy service URL (`https://...up.railway.app`).
-5. Create service `dist_api_gateway` from the same repository.
-6. In `Settings > Root Directory`, set `/` (repo root).
-7. Set Variables:
-   - `APP_MODULE=dist_api_gateway`
-   - `APP_GATEWAY_BUSINESS_QR_URL=<businesscard_qr service URL>`
-8. Deploy and use `dist_api_gateway` URL as client base URL.
-
-### Service 1: `businesscard_qr`
-
-- `APP_MODULE=businesscard_qr`
-- Required env examples:
-  - `SPRING_DATASOURCE_URL`
-  - `SPRING_DATASOURCE_USERNAME`
-  - `SPRING_DATASOURCE_PASSWORD`
-  - `SPRING_JPA_DDL_AUTO=update`
-  - `APP_JWT_SECRET` (32+ chars)
-  - `APP_CORS_ALLOWED_ORIGINS=https://<gateway-service>.up.railway.app`
-  - `APP_STORAGE_TYPE=db` (업로드 이미지 저장소. `db`=MySQL 영구 저장(기본), `local`=로컬 디스크)
-  - (선택) `SPRING_H2_CONSOLE_ENABLED`는 기본 `false`. SQL 로그도 기본 off.
-
-### Service 2: `dist_api_gateway`
-
-- `APP_MODULE=dist_api_gateway`
-- Required env examples:
-  - `APP_GATEWAY_BUSINESS_QR_URL=https://<businesscard-service>.up.railway.app`
-  - Legacy fallback also supported: `APP_GATEWAY_TARGET_BASE_URL=...`
-
-### Health check
-
-- `railway.toml` health check path is `/healthz` for both modules.
-- `businesscard_qr` and `dist_api_gateway` both expose `GET /healthz`.
-
-## Local run (monorepo root)
-
-```bash
-./gradlew :businesscard_qr:bootRun
-./gradlew :dist_api_gateway:bootRun
+```
+저장소 1개 = Railway 프로젝트 1개
+빌드: 루트 단일 Dockerfile → 이미지 1개 (모든 모듈 jar 포함)
+실행: 모듈 1개 = Railway 서비스 1개 (APP_MODULE로 선택)
+접근: 각 서비스가 자기 공개 URL로 직접 트래픽 수신 (게이트웨이 없음)
 ```
 
-Default ports:
+## 모듈
 
-- `businesscard_qr`: `8081`
-- `dist_api_gateway`: `8080`
+| 폴더 | 정체 | 배포 |
+|------|------|------|
+| `businesscard_qr/` | 명함 QR API 서버 (Spring Boot) | Railway 서비스 `APP_MODULE=businesscard_qr` |
+| `businesscard_qr_app/` | Flutter 앱 (Gradle 멤버 아님) | APK 별도 배포 — 서버 이미지에 포함 안 됨 |
+
+## Railway 배포
+
+서비스별 환경변수와 절차: [설계/railway_배포_실행가이드.md](설계/railway_배포_실행가이드.md)
+
+핵심 (businesscard_qr 서비스):
+
+- `APP_MODULE=businesscard_qr`
+- `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD` — **필수.** 없으면 부팅 실패(fail-fast, H2 인메모리 데이터 소실 방지)
+- `APP_JWT_SECRET` (32+ chars) — 기본값이면 배포 차단
+- `APP_PUBLIC_BASE_URL=https://<이 서비스의 공개 도메인>` — QR/이미지/다운로드 절대 URL 기준
+- `APP_STORAGE_TYPE=db` (기본) — 업로드 이미지를 MySQL에 저장(재배포에도 보존)
+- 헬스체크: `GET /healthz` (railway.toml)
+
+## 새 모듈 추가 절차
+
+[설계/아키텍처_방향결정.md](설계/아키텍처_방향결정.md) §3 참고. 요약:
+
+1. 프로젝트 폴더를 루트에 추가
+2. `settings.gradle`에 `include '<module>'`
+3. `Dockerfile`의 `[새 모듈 추가 시]` 주석 위치 3곳 + start.sh 허용 목록에 추가
+4. Railway 서비스 생성 (`APP_MODULE=<module>`) + Generate Domain
+
+## Local run
+
+```bash
+./gradlew :businesscard_qr:bootRun   # 8081 (로컬 기본: H2 인메모리)
+```

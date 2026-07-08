@@ -1,16 +1,17 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  static const String _defaultGatewayBaseUrl =
-      'https://distapigateway-production.up.railway.app';
+  // businesscard_qr 서비스의 자기 공개 도메인 (게이트웨이 은퇴 — 설계/아키텍처_방향결정.md)
+  static const String _defaultBaseUrl =
+      'https://businesscardqr-production.up.railway.app';
 
   static String get baseUrl {
     final configured =
-        dotenv.env['GATEWAY_BASE_URL'] ?? dotenv.env['BACKEND_BASE_URL'];
+        dotenv.env['BACKEND_BASE_URL'] ?? dotenv.env['GATEWAY_BASE_URL'];
     if (configured != null && configured.isNotEmpty) {
       return configured;
     }
-    return _defaultGatewayBaseUrl;
+    return _defaultBaseUrl;
   }
 
   static Uri uri(String path, {Map<String, String>? queryParameters}) {
