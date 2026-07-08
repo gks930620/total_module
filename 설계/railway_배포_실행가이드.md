@@ -1,5 +1,10 @@
 # Railway 배포 실행 가이드 (처음부터)
 
+> **⚠️ 2026-07-08 방향 전환**: dist_api_gateway는 은퇴 예정 ([`아키텍처_방향결정.md`](아키텍처_방향결정.md) 기준).
+> 이 가이드의 §4(게이트웨이 생성)·§5(CORS를 게이트웨이 도메인으로)는 **더 이상 따라하지 말 것.**
+> 새 모듈 추가 시에는 §3 패턴(서비스 생성 + APP_MODULE + 자기 도메인 Generate)만 반복하면 된다.
+> 청산 작업 완료 후 이 문서는 전면 갱신 예정.
+
 이 문서는 Railway를 처음 쓰는 상황을 기준으로 작성했습니다.  
 아래 순서대로 그대로 진행하면 `total_module` 저장소를 Railway에 배포할 수 있습니다.
 
@@ -7,7 +12,7 @@
 
 1. `mysql` (DB)
 2. `businesscard_qr` (실제 API 서버)
-3. `dist_api_gateway` (외부 진입점, `businesscard_qr`로 프록시)
+3. `dist_api_gateway` (외부 진입점, `businesscard_qr`로 프록시) ← ⚠️ 은퇴 예정
 
 ---
 

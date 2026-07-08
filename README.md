@@ -1,5 +1,8 @@
 # total_module
 
+> **⚠️ 2026-07-08 아키텍처 방향 전환**: dist_api_gateway는 **은퇴 예정**이며, 각 모듈이 자기 공개 URL로 직접 트래픽을 받는 방향으로 확정됨.
+> 기준 문서: [설계/아키텍처_방향결정.md](설계/아키텍처_방향결정.md) — 아래 게이트웨이 관련 내용은 청산 작업 완료 시 삭제 예정.
+
 `total_module` is a monorepo with two backend modules:
 
 - `businesscard_qr`: main business-card API server
