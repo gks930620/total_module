@@ -21,6 +21,7 @@ Each Railway service selects which jar to run with `APP_MODULE`.
    - `SPRING_DATASOURCE_USERNAME=...`
    - `SPRING_DATASOURCE_PASSWORD=...`
    - `SPRING_JPA_DDL_AUTO=update`
+   - `APP_STORAGE_TYPE=db`  # 업로드 이미지를 Railway MySQL에 저장(재배포에도 보존). 기본값도 `db`.
 4. Deploy and copy service URL (`https://...up.railway.app`).
 5. Create service `dist_api_gateway` from the same repository.
 6. In `Settings > Root Directory`, set `/` (repo root).
@@ -39,6 +40,8 @@ Each Railway service selects which jar to run with `APP_MODULE`.
   - `SPRING_JPA_DDL_AUTO=update`
   - `APP_JWT_SECRET` (32+ chars)
   - `APP_CORS_ALLOWED_ORIGINS=https://<gateway-service>.up.railway.app`
+  - `APP_STORAGE_TYPE=db` (업로드 이미지 저장소. `db`=MySQL 영구 저장(기본), `local`=로컬 디스크)
+  - (선택) `SPRING_H2_CONSOLE_ENABLED`는 기본 `false`. SQL 로그도 기본 off.
 
 ### Service 2: `dist_api_gateway`
 

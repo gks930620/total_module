@@ -169,9 +169,19 @@ APP_CORS_ALLOWED_ORIGINS=https://gateway-xxxx.up.railway.app
 
 ---
 
+railway 주소 :
+- distapigateway-production.up.railway.app
+- businesscardqr-production.up.railway.app
 
-raiwlay 설정에 맞게 프로젝트 설정파일들 수정
-커밋 푸쉬 
+
+
+지금 현재 브랜치에서 
+app이 railway 주소 바라보도록 함.  emulator에서 실행하고 
+외부폰으로 QR해서 테스트해보면 됨
+(에러나네 railway 확인해보고 배포중 무슨이상인지 확인 ㄱ )
+
+
+
 
 
 

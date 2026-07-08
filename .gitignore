@@ -101,3 +101,6 @@ application-secret.properties
 .railway/
 
 /uploads/
+
+# 로컬 SDK 경로 (Flutter/Android 도구가 생성)
+local.properties
