@@ -8,42 +8,42 @@ import com.businesscard.card.dto.BusinessCardUpsertRequest;
 import com.businesscard.card.dto.DownloadUrlResponse;
 import com.businesscard.card.entity.BusinessCardEntity;
 import com.businesscard.card.repository.BusinessCardRepository;
+import com.businesscard.card.storage.FileStorage;
+import com.businesscard.card.storage.StoredFile;
+import com.businesscard.card.support.PublicUrlResolver;
 import com.businesscard.card.util.VCardGeneratorUtil;
 import com.businesscard.common.exception.BusinessRuleException;
+import com.businesscard.common.exception.DuplicateResourceException;
 import com.businesscard.common.exception.EntityNotFoundException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
 public class BusinessCardService {
 
     private static final int DOWNLOAD_TOKEN_TTL_MINUTES = 5;
+    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS =
+            Set.of("jpg", "jpeg", "png", "gif", "bmp", "webp");
 
     private final BusinessCardRepository businessCardRepository;
     private final ObjectMapper objectMapper;
     private final Validator validator;
     private final VCardGeneratorUtil vCardGeneratorUtil;
-
-    @Value("${file.upload-dir:./uploads}")
-    private String uploadDir;
+    private final FileStorage fileStorage;
+    private final PublicUrlResolver publicUrlResolver;
 
     @Transactional(readOnly = true)
     public List<BusinessCardResponse> getBusinessCards(String userId) {
@@ -64,9 +64,7 @@ public class BusinessCardService {
     public BusinessCardIdResponse createBusinessCard(String userId, String payload, MultipartFile businessCardImage) {
         validateUserId(userId);
         BusinessCardUpsertRequest request = parseAndValidatePayload(payload);
-        String cardId = request.getId() == null || request.getId().isBlank()
-                ? UUID.randomUUID().toString()
-                : request.getId();
+        String cardId = resolveCardId(request.getId());
 
         String imagePath = storeImage(cardId, businessCardImage);
         BusinessCardEntity entity = request.toEntity(cardId, userId, imagePath);
@@ -103,10 +101,14 @@ public class BusinessCardService {
     }
 
     @Transactional
-    public void incrementViewCount(String userId, String cardId) {
-        validateUserId(userId);
-        BusinessCardEntity card = getOwnedActiveCard(userId, cardId);
-        card.incrementViewCount();
+    public void incrementViewCount(String cardId) {
+        // 조회수는 카드를 "본" 사람이 올리는 값이므로 소유자/인증으로 제한하지 않는다.
+        // QR을 스캔한 비로그인 방문자도 활성 카드이기만 하면 조회수를 증가시킬 수 있다.
+        // 동시 스캔 시 갱신 유실(lost update)이 없도록 DB에서 원자적으로 증가시킨다.
+        int updated = businessCardRepository.incrementViewCount(cardId);
+        if (updated == 0) {
+            throw EntityNotFoundException.of("명함", cardId);
+        }
     }
 
     @Transactional
@@ -117,7 +119,7 @@ public class BusinessCardService {
         String token = UUID.randomUUID().toString();
         card.issueVcfToken(token, LocalDateTime.now().plusMinutes(DOWNLOAD_TOKEN_TTL_MINUTES));
 
-        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
+        String url = publicUrlResolver.baseUriBuilder()
                 .path("/api/business-cards/")
                 .path(cardId)
                 .path("/downloads/vcf")
@@ -137,7 +139,7 @@ public class BusinessCardService {
         String token = UUID.randomUUID().toString();
         card.issueImageToken(token, LocalDateTime.now().plusMinutes(DOWNLOAD_TOKEN_TTL_MINUTES));
 
-        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
+        String url = publicUrlResolver.baseUriBuilder()
                 .path("/api/business-cards/")
                 .path(cardId)
                 .path("/downloads/image")
@@ -167,37 +169,30 @@ public class BusinessCardService {
         if (!card.isImageTokenValid(token)) {
             throw new BusinessRuleException("이미지 다운로드 토큰이 유효하지 않습니다.");
         }
-        if (card.getBusinessCardImagePath() == null || card.getBusinessCardImagePath().isBlank()) {
+        String imagePath = card.getBusinessCardImagePath();
+        if (imagePath == null || imagePath.isBlank()) {
             throw new BusinessRuleException("명함 이미지가 존재하지 않습니다.");
         }
 
-        Path imagePath = toPhysicalPath(card.getBusinessCardImagePath());
-        if (!Files.exists(imagePath)) {
-            throw new EntityNotFoundException("명함 이미지를 찾을 수 없습니다.");
-        }
+        StoredFile stored = fileStorage.load(imagePath)
+                .orElseThrow(() -> new EntityNotFoundException("명함 이미지를 찾을 수 없습니다."));
 
-        try {
-            String contentType = Files.probeContentType(imagePath);
-            if (contentType == null || contentType.isBlank()) {
-                contentType = "application/octet-stream";
-            }
-            String extension = extractExtension(imagePath.getFileName().toString());
-            String fileName = buildDownloadFileName(card.getFullName(), extension);
-            byte[] bytes = Files.readAllBytes(imagePath);
-            return new DownloadFile(fileName, contentType, bytes);
-        } catch (IOException e) {
-            throw new BusinessRuleException("이미지 파일을 읽을 수 없습니다.");
-        }
+        String contentType = stored.contentType() == null || stored.contentType().isBlank()
+                ? "application/octet-stream"
+                : stored.contentType();
+        String extension = extractExtension(fileNameOf(imagePath));
+        String fileName = buildDownloadFileName(card.getFullName(), extension);
+        return new DownloadFile(fileName, contentType, stored.bytes());
     }
 
     private BusinessCardResponse toResponse(BusinessCardEntity entity) {
         String imageUrl = null;
         if (entity.getBusinessCardImagePath() != null && !entity.getBusinessCardImagePath().isBlank()) {
-            imageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+            imageUrl = publicUrlResolver.baseUriBuilder()
                     .path(entity.getBusinessCardImagePath())
                     .toUriString();
         }
-        String vcfUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+        String vcfUrl = publicUrlResolver.baseUriBuilder()
                 .path("/api/business-cards/")
                 .path(entity.getId())
                 .path("/vcf-download-url")
@@ -220,6 +215,35 @@ public class BusinessCardService {
         if (userId == null || userId.isBlank()) {
             throw new BusinessRuleException("Authenticated user id is required.");
         }
+    }
+
+    /**
+     * 명함 id 결정.
+     *
+     * <p>클라이언트가 id를 지정하지 않으면 서버가 UUID를 생성한다.
+     * 지정한 경우에는 반드시 UUID 형식이어야 한다 —
+     * (1) 이미지 파일명(`<cardId>_<timestamp>`)의 "추측 어려움" 전제를 유지하고,
+     * (2) 오프라인 우선 클라이언트가 미리 생성한 UUID는 그대로 허용하기 위함.
+     *
+     * <p>또한 이미 존재하는 id인지 검사한다. {@code BusinessCardEntity}는 assigned id를
+     * 쓰므로 {@code JpaRepository.save()}가 {@code merge()}로 동작한다. 즉 존재하는 id로
+     * 생성하면 PK 충돌 500이 아니라 <b>다른 사용자의 카드를 조용히 덮어쓴다</b>(소유권 탈취).
+     * 이를 막기 위해 생성 시점에 존재 여부를 확인하고 충돌 시 409로 응답한다.
+     */
+    private String resolveCardId(String requestedId) {
+        if (requestedId == null || requestedId.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+        String cardId;
+        try {
+            cardId = UUID.fromString(requestedId.trim()).toString();
+        } catch (IllegalArgumentException e) {
+            throw new BusinessRuleException("id는 UUID 형식이어야 합니다.");
+        }
+        if (businessCardRepository.existsById(cardId)) {
+            throw DuplicateResourceException.alreadyExists("이미 존재하는 명함 id입니다.");
+        }
+        return cardId;
     }
 
     private BusinessCardUpsertRequest parseAndValidatePayload(String payload) {
@@ -246,17 +270,27 @@ public class BusinessCardService {
             return null;
         }
 
+        validateImageContentType(image);
         String extension = extractExtension(image.getOriginalFilename());
         String fileName = cardId + "_" + System.currentTimeMillis() + "." + extension;
-        Path imageDir = Paths.get(uploadDir, "business-card-images").toAbsolutePath().normalize();
-        Path targetPath = imageDir.resolve(fileName).normalize();
 
+        byte[] bytes;
         try {
-            Files.createDirectories(imageDir);
-            Files.copy(image.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            return "/uploads/business-card-images/" + fileName;
+            bytes = image.getBytes();
         } catch (IOException e) {
             throw new BusinessRuleException("이미지 파일 저장에 실패했습니다.");
+        }
+        return fileStorage.store("business-card-images/" + fileName, bytes, image.getContentType());
+    }
+
+    private void validateImageContentType(MultipartFile image) {
+        String contentType = image.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new BusinessRuleException("이미지 파일만 업로드할 수 있습니다.");
+        }
+        String extension = extractExtension(image.getOriginalFilename());
+        if (!ALLOWED_IMAGE_EXTENSIONS.contains(extension)) {
+            throw new BusinessRuleException("지원하지 않는 이미지 형식입니다.");
         }
     }
 
@@ -264,23 +298,12 @@ public class BusinessCardService {
         if (imagePath == null || imagePath.isBlank()) {
             return;
         }
-
-        Path path = toPhysicalPath(imagePath);
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-        }
+        fileStorage.delete(imagePath);
     }
 
-    private Path toPhysicalPath(String imagePath) {
-        String normalized = imagePath.startsWith("/uploads/")
-                ? imagePath.substring("/uploads/".length())
-                : imagePath;
-        return Paths.get(uploadDir)
-                .toAbsolutePath()
-                .normalize()
-                .resolve(normalized)
-                .normalize();
+    private String fileNameOf(String logicalPath) {
+        int slash = logicalPath.lastIndexOf('/');
+        return slash >= 0 ? logicalPath.substring(slash + 1) : logicalPath;
     }
 
     private String extractExtension(String fileName) {
@@ -306,24 +329,21 @@ public class BusinessCardService {
             return VCardPhoto.empty();
         }
 
-        Path physicalPath = toPhysicalPath(imagePath);
-        if (!Files.exists(physicalPath)) {
-            return VCardPhoto.empty();
-        }
-
+        // vCard 생성은 사진 없이도 성공해야 하므로 로드 실패는 조용히 무시한다.
+        Optional<StoredFile> stored;
         try {
-            byte[] imageBytes = Files.readAllBytes(physicalPath);
-            if (imageBytes.length == 0) {
-                return VCardPhoto.empty();
-            }
-
-            String extension = extractExtension(physicalPath.getFileName().toString());
-            String photoType = toVCardPhotoType(extension);
-            String encoded = Base64.getEncoder().encodeToString(imageBytes);
-            return new VCardPhoto(photoType, encoded);
-        } catch (IOException ignored) {
+            stored = fileStorage.load(imagePath);
+        } catch (RuntimeException ignored) {
             return VCardPhoto.empty();
         }
+        if (stored.isEmpty() || stored.get().bytes().length == 0) {
+            return VCardPhoto.empty();
+        }
+
+        String extension = extractExtension(fileNameOf(imagePath));
+        String photoType = toVCardPhotoType(extension);
+        String encoded = Base64.getEncoder().encodeToString(stored.get().bytes());
+        return new VCardPhoto(photoType, encoded);
     }
 
     private String toVCardPhotoType(String extension) {

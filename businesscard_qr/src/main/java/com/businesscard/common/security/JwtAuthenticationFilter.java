@@ -33,7 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return HttpMethod.OPTIONS.matches(request.getMethod())
                 || !uri.startsWith("/api/")
                 || pathMatcher.match("/api/auth/**", uri)
-                || pathMatcher.match("/api/business-cards/*/downloads/**", uri);
+                || pathMatcher.match("/api/business-cards/*/downloads/**", uri)
+                || pathMatcher.match("/api/business-cards/*/view-count", uri);
     }
 
     @Override

@@ -4,23 +4,36 @@ import com.businesscard.card.dto.BusinessCardUpsertRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "business_cards")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class BusinessCardEntity {
+public class BusinessCardEntity implements Persistable<String> {
 
     @Id
     private String id;
+
+    /**
+     * assigned id 엔티티는 save() 시 merge(SELECT 후 UPDATE)로 동작해
+     * 이미 존재하는 id면 다른 사용자의 카드를 조용히 덮어쓸 수 있다.
+     * Persistable을 구현해 새 인스턴스는 항상 persist(진짜 INSERT)되도록 하고,
+     * 중복 PK는 DataIntegrityViolationException(→409)으로 드러나게 한다.
+     */
+    @Transient
+    private boolean isNew = true;
 
     @Column(name = "user_id", nullable = false, length = 120)
     private String userId;
@@ -133,10 +146,6 @@ public class BusinessCardEntity {
         this.isActive = false;
     }
 
-    public void incrementViewCount() {
-        this.viewCount += 1;
-    }
-
     public void issueVcfToken(String token, LocalDateTime expiresAt) {
         this.vcfDownloadToken = token;
         this.vcfTokenExpiresAt = expiresAt;
@@ -159,6 +168,17 @@ public class BusinessCardEntity {
                 && token.equals(imageDownloadToken)
                 && imageTokenExpiresAt != null
                 && LocalDateTime.now().isBefore(imageTokenExpiresAt);
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
     }
 
     @PrePersist

@@ -77,12 +77,13 @@ public class BusinessCardController {
         return ResponseEntity.ok(ApiResponse.success("Business card deleted", null));
     }
 
+    // 조회수 증가는 공개 엔드포인트다. 명함을 QR로 스캔한 비로그인 방문자가
+    // 조회수를 올릴 수 있어야 하므로 인증(Authentication)을 요구하지 않는다.
     @PostMapping("/{cardId}/view-count")
     public ResponseEntity<ApiResponse<Void>> incrementViewCount(
-            Authentication authentication,
             @PathVariable String cardId
     ) {
-        businessCardService.incrementViewCount(authentication.getName(), cardId);
+        businessCardService.incrementViewCount(cardId);
         return ResponseEntity.ok(ApiResponse.success("View count increased", null));
     }
 

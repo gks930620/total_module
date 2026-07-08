@@ -2,6 +2,7 @@ package com.businesscard.auth.controller;
 
 import com.businesscard.auth.dto.AuthTokenResponse;
 import com.businesscard.auth.dto.KakaoLoginRequest;
+import com.businesscard.auth.dto.RefreshTokenRequest;
 import com.businesscard.auth.service.AuthService;
 import com.businesscard.common.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -25,5 +26,13 @@ public class AuthController {
     ) {
         AuthTokenResponse data = authService.loginWithKakaoAccessToken(request.kakaoAccessToken());
         return ResponseEntity.ok(ApiResponse.success("Login success", data));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+        AuthTokenResponse data = authService.refresh(request.refreshToken());
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed", data));
     }
 }

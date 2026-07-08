@@ -17,6 +17,8 @@ import com.businesscard.auth.dto.AuthTokenResponse;
 import com.businesscard.auth.service.AuthService;
 import com.businesscard.card.entity.BusinessCardEntity;
 import com.businesscard.card.repository.BusinessCardRepository;
+import com.businesscard.card.storage.FileStorage;
+import com.businesscard.card.storage.StoredFileRepository;
 import com.businesscard.common.security.JwtTokenProvider;
 import com.businesscard.user.entity.UserEntity;
 import com.businesscard.user.repository.UserRepository;
@@ -68,6 +70,12 @@ class ApiIntegrationTest {
     @Autowired
     private BusinessCardRepository businessCardRepository;
 
+    @Autowired
+    private FileStorage fileStorage;
+
+    @Autowired
+    private StoredFileRepository storedFileRepository;
+
     @MockBean
     private AuthService authService;
 
@@ -80,6 +88,7 @@ class ApiIntegrationTest {
         cleanUploadDirectory();
         businessCardRepository.deleteAll();
         userRepository.deleteAll();
+        storedFileRepository.deleteAll();
 
         userRepository.save(UserEntity.builder()
                 .id(TEST_USER_ID)
@@ -98,7 +107,7 @@ class ApiIntegrationTest {
     @Test
     void loginWithKakao_returnsTokenResponse() throws Exception {
         given(authService.loginWithKakaoAccessToken("kakao-access-token"))
-                .willReturn(AuthTokenResponse.bearer("issued-jwt-token", 3600L, "kakao_200"));
+                .willReturn(AuthTokenResponse.bearer("issued-jwt-token", "issued-refresh-token", 3600L, "kakao_200"));
 
         mockMvc.perform(post("/api/auth/kakao")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -110,6 +119,7 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.accessToken").value("issued-jwt-token"))
+                .andExpect(jsonPath("$.data.refreshToken").value("issued-refresh-token"))
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.data.expiresIn").value(3600))
                 .andExpect(jsonPath("$.data.userId").value("kakao_200"));
@@ -197,6 +207,57 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void createBusinessCard_rejectsNonUuidId() throws Exception {
+        // 클라이언트가 지정한 id는 UUID 형식이어야 한다(예: "1" 거부 → 400).
+        MockMultipartFile payload = new MockMultipartFile(
+                "payload",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                """
+                        {
+                          "id": "1",
+                          "full_name": "형식오류"
+                        }
+                        """.getBytes(StandardCharsets.UTF_8)
+        );
+
+        mockMvc.perform(multipart("/api/business-cards")
+                        .file(payload)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createBusinessCard_rejectsExistingId_withoutOverwrite() throws Exception {
+        // 이미 존재하는 id로 생성하면 다른 사용자의 카드를 덮어쓰지 않고 409로 거부한다.
+        String existingId = saveCard("kakao_other-owner", "원본소유자", null);
+
+        MockMultipartFile payload = new MockMultipartFile(
+                "payload",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                ("""
+                        {
+                          "id": "%s",
+                          "full_name": "탈취시도"
+                        }
+                        """.formatted(existingId)).getBytes(StandardCharsets.UTF_8)
+        );
+
+        mockMvc.perform(multipart("/api/business-cards")
+                        .file(payload)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken()))
+                .andExpect(status().isConflict());
+
+        // 원본 카드가 그대로 유지되어야 한다(덮어쓰기 없음).
+        assertThat(businessCardRepository.findById(existingId))
+                .isPresent()
+                .get()
+                .extracting(BusinessCardEntity::getUserId, BusinessCardEntity::getFullName)
+                .containsExactly("kakao_other-owner", "원본소유자");
+    }
+
+    @Test
     void updateBusinessCard_returnsUpdatedId() throws Exception {
         String cardId = saveCard(TEST_USER_ID, "수정전", null);
 
@@ -252,6 +313,22 @@ class ApiIntegrationTest {
 
         mockMvc.perform(post("/api/business-cards/{cardId}/view-count", cardId)
                         .header(HttpHeaders.AUTHORIZATION, bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        assertThat(businessCardRepository.findById(cardId))
+                .isPresent()
+                .get()
+                .extracting(BusinessCardEntity::getViewCount)
+                .isEqualTo(1);
+    }
+
+    @Test
+    void incrementViewCount_worksWithoutAuthentication() throws Exception {
+        // 조회수는 QR을 스캔한 비로그인 방문자도 올릴 수 있어야 한다(공개 엔드포인트).
+        String cardId = saveCard(TEST_USER_ID, "익명조회수", null);
+
+        mockMvc.perform(post("/api/business-cards/{cardId}/view-count", cardId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -331,6 +408,39 @@ class ApiIntegrationTest {
         assertThat(downloadResult.getResponse().getContentAsByteArray()).isEqualTo(imageBytes);
     }
 
+    @Test
+    void unknownPath_returnsNotFound() throws Exception {
+        // 존재하지 않는 경로는 500이 아니라 404 + 공통 에러 응답이어야 한다.
+        mockMvc.perform(get("/unknown-path"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void wrongHttpMethod_returnsMethodNotAllowed() throws Exception {
+        // POST 전용 엔드포인트에 GET → 500이 아니라 405 + 공통 에러 응답이어야 한다.
+        mockMvc.perform(get("/api/auth/kakao"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void createBusinessCard_withoutPayloadPart_returnsBadRequest() throws Exception {
+        // 필수 multipart part(payload) 누락 → 500이 아니라 400 + 공통 에러 응답이어야 한다.
+        MockMultipartFile image = new MockMultipartFile(
+                "businessCardImage",
+                "profile.png",
+                "image/png",
+                new byte[]{1, 2, 3}
+        );
+
+        mockMvc.perform(multipart("/api/business-cards")
+                        .file(image)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
     private String saveCard(String userId, String fullName, String imagePath) {
         String cardId = UUID.randomUUID().toString();
         businessCardRepository.save(BusinessCardEntity.builder()
@@ -343,12 +453,9 @@ class ApiIntegrationTest {
         return cardId;
     }
 
-    private String createImageFile(String fileName, byte[] bytes) throws IOException {
-        Path imageDir = uploadRoot.resolve("business-card-images");
-        Files.createDirectories(imageDir);
-        Path imagePath = imageDir.resolve(fileName);
-        Files.write(imagePath, bytes);
-        return "/uploads/business-card-images/" + fileName;
+    private String createImageFile(String fileName, byte[] bytes) {
+        // 운영 기본 저장소(DB)를 그대로 사용해 저장 → 다운로드 경로를 검증한다.
+        return fileStorage.store("business-card-images/" + fileName, bytes, "image/png");
     }
 
     private String bearerToken() {

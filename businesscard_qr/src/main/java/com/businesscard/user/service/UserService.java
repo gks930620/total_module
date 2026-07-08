@@ -14,6 +14,11 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
+    public boolean existsById(String userId) {
+        return userRepository.existsById(userId);
+    }
+
     public void validateSyncRequest(String authenticatedUserId, UserSyncRequest request) {
         if (authenticatedUserId == null || authenticatedUserId.isBlank()) {
             throw new BusinessRuleException("authenticated user id is required.");
