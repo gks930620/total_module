@@ -7,6 +7,9 @@ spring:
     name: dist-api-gateway
   servlet:
     multipart:
+      # Gateway must proxy multipart bodies as raw bytes.
+      # Keep multipart resolver disabled to avoid request parsing before forwarding.
+      enabled: false
       max-file-size: 10MB
       max-request-size: 50MB
 
