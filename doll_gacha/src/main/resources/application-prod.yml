@@ -1,0 +1,76 @@
+# =========================================================
+# 배포(운영) 설정 - Railway MySQL
+#  활성화: SPRING_PROFILES_ACTIVE=prod
+#  Railway MySQL 플러그인이 주입하는 MYSQL* 변수 또는
+#  SPRING_DATASOURCE_* 를 그대로 사용한다.
+# =========================================================
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${MYSQLHOST:localhost}:${MYSQLPORT:3306}/${MYSQLDATABASE:doll_gacha}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:${MYSQLUSER:root}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQLPASSWORD:}}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+        default_batch_fetch_size: 100
+    database-platform: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+
+  sql:
+    init:
+      mode: never   # 운영에서 시드 SQL 비활성화
+
+  devtools:
+    livereload:
+      enabled: false
+    restart:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type: WARN
+    com.doll.gacha: INFO
+
+# 쿠키 보안 설정 (운영: HTTPS 이므로 true)
+app:
+  cookie:
+    secure: true
+
+# Supabase Storage (운영: 활성화 → SupabaseFileStorage 사용)
+supabase:
+  url: ${SUPABASE_URL}
+  key: ${SUPABASE_ANON_KEY}
+  bucket: uploads
+  enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# 파일 업로드 경로 (운영)
+file:
+  upload-dir: /app/uploads

@@ -10,5 +10,7 @@
 **/.env
 **/.env.*
 uploads
-businesscard_qr/businesscard_qr_app
-dist_api_gateway/frontend
+businesscard_qr_app
+doll_gacha/logs
+doll_gacha/data
+doll_gacha/frontend/dist

@@ -1,0 +1,73 @@
+# 로컬 개발 전용 — Railway 배포는 total_module 루트 Dockerfile을 사용한다
+
+services:
+  # MySQL 데이터베이스 (운영과 동일한 드라이버 — build.gradle 에 mysql-connector-j 만 존재)
+  db:
+    image: mysql:8.0
+    container_name: doll_gacha_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: doll_gacha
+      MYSQL_USER: doll_gacha
+      MYSQL_PASSWORD: ${DB_PASSWORD:-ckdlsk13!}
+      TZ: Asia/Seoul
+    ports:
+      - "3407:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - doll_gacha_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot 애플리케이션
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doll_gacha_server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # prod 프로파일(=MySQL) 활성화
+      SPRING_PROFILES_ACTIVE: prod
+
+      # 데이터베이스 설정 (MySQL 드라이버)
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/doll_gacha?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: doll_gacha
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-ckdlsk13!}
+
+      # OAuth2 설정
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+      # JWT 설정
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+
+      # 앱 URL (프로덕션 환경)
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+
+      # Supabase Storage (prod 프로파일은 파일 업로드 시 Supabase 사용 — 비워두면 업로드 기능만 실패)
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - doll_gacha_network
+
+networks:
+  doll_gacha_network:
+    driver: bridge
+
+volumes:
+  db_data:

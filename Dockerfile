@@ -5,20 +5,24 @@ COPY gradlew gradlew.bat settings.gradle build.gradle ./
 COPY gradle ./gradle
 # [새 모듈 추가 시] 아래에 COPY <module> ./<module> 한 줄 추가
 COPY businesscard_qr ./businesscard_qr
+COPY doll_gacha ./doll_gacha
 
 RUN chmod +x ./gradlew
 # [새 모듈 추가 시] :<module>:bootJar 추가
-RUN ./gradlew --no-daemon :businesscard_qr:bootJar
+RUN ./gradlew --no-daemon :businesscard_qr:bootJar :doll_gacha:bootJar
 
 # [새 모듈 추가 시] 해당 모듈 jar 추출/복사 라인 추가
 RUN mkdir -p /workspace/out && \
     BUSINESS_JAR="$(find /workspace/businesscard_qr/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*plain*' | head -n 1)" && \
-    cp "$BUSINESS_JAR" /workspace/out/businesscard_qr.jar
+    cp "$BUSINESS_JAR" /workspace/out/businesscard_qr.jar && \
+    DOLL_JAR="$(find /workspace/doll_gacha/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*plain*' | head -n 1)" && \
+    cp "$DOLL_JAR" /workspace/out/doll_gacha.jar
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 COPY --from=builder /workspace/out/businesscard_qr.jar /app/businesscard_qr.jar
+COPY --from=builder /workspace/out/doll_gacha.jar /app/doll_gacha.jar
 
 RUN cat <<'EOF' > /app/start.sh
 #!/bin/sh
@@ -70,11 +74,23 @@ if [ -n "${APP_CORS_ALLOWED_ORIGINS:-}" ]; then
   APP_CORS_ALLOWED_ORIGINS="$(sanitize_quoted "$APP_CORS_ALLOWED_ORIGINS")"
   export APP_CORS_ALLOWED_ORIGINS
 fi
+if [ -n "${SPRING_PROFILES_ACTIVE:-}" ]; then
+  SPRING_PROFILES_ACTIVE="$(sanitize_quoted "$SPRING_PROFILES_ACTIVE")"
+  export SPRING_PROFILES_ACTIVE
+fi
+if [ -n "${SUPABASE_URL:-}" ]; then
+  SUPABASE_URL="$(sanitize_quoted "$SUPABASE_URL")"
+  export SUPABASE_URL
+fi
+if [ -n "${SUPABASE_KEY:-}" ]; then
+  SUPABASE_KEY="$(sanitize_quoted "$SUPABASE_KEY")"
+  export SUPABASE_KEY
+fi
 
 # [새 모듈 추가 시] 허용 목록에 모듈명 추가 (예: businesscard_qr|project_a)
 case "$APP_MODULE" in
-  businesscard_qr) ;;
-  *) echo "APP_MODULE must be one of: businesscard_qr (got: $APP_MODULE)"; exit 1 ;;
+  businesscard_qr|doll_gacha) ;;
+  *) echo "APP_MODULE must be one of: businesscard_qr, doll_gacha (got: $APP_MODULE)"; exit 1 ;;
 esac
 
 exec java -Dserver.port="${PORT:-8080}" -jar "/app/${APP_MODULE}.jar"

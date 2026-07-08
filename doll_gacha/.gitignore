@@ -1,0 +1,122 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+logs/
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs
+hs_err_pid*
+replay_pid*
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Maven ###
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Gradle ###
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### Application properties with sensitive data ###
+application-local.yml
+application-local.properties
+application-secret.yml
+application-secret.properties
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### etc ###
+*.swp
+*.swo
+*~
+.env
+
+
+# 환경변수 파일
+.env
+.env.local
+.env.*.local
+
+# API 키가 포함된 설정 파일
+*-secret.*
+*-private.*
+# application-prod.yml은 환경변수로 처리되므로 커밋 가능
+application-prod.properties
+
+/uploads/
+
+# H2 로컬 파일 DB
+/data/
+*.mv.db
+*.trace.db
+
+# 프론트엔드 (React) 빌드 산출물 / 의존성
+/frontend/node_modules/
+/frontend/dist/
+
+# Vite 빌드 산출물(src/main/resources/static)은 반드시 커밋한다.
+# Railway 배포용 루트 Dockerfile 빌더에는 node/npm 이 없어서 프론트 빌드를 못 하고,
+# 커밋된 static(index.html + assets/*.js/*.css)을 그대로 bootJar 에 포함시키기 때문.
+# (이전의 /src/main/resources/static/assets/, vite.svg ignore 는 배포 산출물 누락
+#  원인이라 제거함 — Railway 배포 대응)

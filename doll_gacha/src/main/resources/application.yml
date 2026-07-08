@@ -1,0 +1,139 @@
+dotenv:
+  enabled: true  # .env 파일 로드. KAKAO_CLIENT_ID 등을 직접 넣으려면 없어도 됨.
+
+# =========================================================
+# 공통 설정 + 로컬(기본 프로파일) 설정
+#  - 로컬: H2 파일 모드 (재시작해도 데이터 유지, 별도 DB 설치 불필요)
+#  - 배포: application-prod.yml (Railway MySQL). SPRING_PROFILES_ACTIVE=prod 로 활성화
+# =========================================================
+# Railway 등 리버스 프록시(HTTPS 종료) 뒤에서 X-Forwarded-* 헤더를 신뢰하여
+# OAuth2 redirect_uri, 절대 URL 생성 시 내부 호스트 대신 공개 https 도메인을 사용
+server:
+  forward-headers-strategy: framework
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 단일 파일 최대 크기
+      max-request-size: 50MB   # 전체 요청 최대 크기
+
+  # ----- 로컬 DB: H2 파일 모드 (MySQL 호환) -----
+  datasource:
+    url: jdbc:h2:file:./data/doll_gacha;MODE=MySQL;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true   # http://localhost:8080/h2-console
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update           # 파일 모드: 스키마 유지하며 반영
+    defer-datasource-initialization: true  # DDL 후 data-*.sql 실행
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        default_batch_fetch_size: 100
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always
+      continue-on-error: true    # 파일 모드 재시작 시 중복 시드 INSERT 오류 무시
+      data-locations:
+        - classpath:data-users.sql
+        - classpath:data-dollshop.sql
+        - classpath:data-files.sql
+        - classpath:data-review.sql
+        - classpath:data-community.sql
+        - classpath:data-comment.sql
+
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      enabled: true
+
+  # ----- OAuth2 (공통: redirect-uri 는 APP_BASE_URL 로 로컬/운영 분기) -----
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            redirect-uri: ${APP_BASE_URL:http://localhost:8080}/login/oauth2/code/kakao
+            authorization-grant-type: authorization_code
+            scope:
+              - profile_nickname
+              - account_email
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${APP_BASE_URL:http://localhost:8080}/login/oauth2/code/google
+            scope:
+              - profile
+              - email
+            authorization-grant-type: authorization_code
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  expiration_access: 1800000    # 30분
+  expiration_refresh: 14400000  # 4시간
+
+# 쿠키 보안 설정 (로컬: HTTP 이므로 false)
+app:
+  cookie:
+    secure: false
+  oauth2:
+    # 앱(target=app) OAuth2 완료 후 토큰 전달 리다이렉트 베이스 (로컬: Android 에뮬레이터)
+    app-redirect-base: ${APP_OAUTH2_REDIRECT_BASE:http://10.0.2.2:8080}
+
+# Supabase Storage 설정 (로컬: 비활성화 → LocalFileStorage 사용)
+supabase:
+  url: ${SUPABASE_URL:}
+  key: ${SUPABASE_ANON_KEY:}
+  bucket: uploads
+  enabled: false
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Swagger
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+# 파일 업로드 경로 (로컬)
+file:
+  upload-dir: ./uploads

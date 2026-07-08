@@ -1,0 +1,132 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.3.4'
+	id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.doll.gacha'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	 // 1. Querydsl 라이브러리 추가
+	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+	annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
+	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+	annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'  // Validation 추가
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+	implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+	// .env 파일 읽기용
+	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+
+	// Swagger (API 문서화)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
+	// Actuator (서버 상태 모니터링)
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// 로컬/테스트: H2, 배포(Railway): MySQL
+	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// 2. QClass 생성 위치 설정 (선택 사항이지만 관리하기 편함)
+def querydslDir = "src/main/generated"
+
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// =========================================================
+// React(Vite) 프론트엔드 통합 빌드 (단일 서버 배포)
+//  npm install -> npm run build -> frontend/dist 를 static 으로 복사
+//  inputs/outputs 선언으로, 변경이 없으면 UP-TO-DATE 로 건너뜀 (테스트 속도 유지)
+// =========================================================
+def frontendDir = file("$projectDir/frontend")
+def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
+
+// npm 존재 여부 감지 (설정 시점에 1회 확인)
+// - Railway 배포용 루트 Dockerfile 빌더(eclipse-temurin:17-jdk)에는 node/npm이 없다.
+//   npm이 없으면 프론트 빌드 태스크를 건너뛰고, 이미 커밋되어 있는
+//   src/main/resources/static 산출물을 그대로 사용해서 bootJar가 성공해야 한다.
+// - 로컬 개발 환경(npm 있음)에서는 기존과 동일하게 npmInstall → npmBuild → copyFrontend 실행.
+def npmAvailable = false
+try {
+    def checkCmd = isWindows ? ['where.exe', 'npm.cmd'] : ['which', 'npm']
+    def proc = checkCmd.execute()
+    proc.waitFor()
+    npmAvailable = (proc.exitValue() == 0)
+} catch (Exception ignored) {
+    npmAvailable = false
+}
+if (!npmAvailable) {
+    logger.lifecycle("[doll_gacha] npm 미탐지: 프론트엔드 빌드를 건너뛰고 커밋된 src/main/resources/static 을 사용합니다.")
+}
+
+tasks.register('npmInstall', Exec) {
+	workingDir frontendDir
+	inputs.files(file("$frontendDir/package.json"))
+	outputs.dir(file("$frontendDir/node_modules"))
+	outputs.upToDateWhen { file("$frontendDir/node_modules").exists() }
+	commandLine(isWindows ? ['npm.cmd', 'install'] : ['npm', 'install'])
+}
+
+tasks.register('npmBuild', Exec) {
+	dependsOn 'npmInstall'
+	workingDir frontendDir
+	inputs.dir(file("$frontendDir/src"))
+	inputs.files(
+		file("$frontendDir/package.json"),
+		file("$frontendDir/vite.config.js"),
+		file("$frontendDir/index.html")
+	)
+	outputs.dir(file("$frontendDir/dist"))
+	commandLine(isWindows ? ['npm.cmd', 'run', 'build'] : ['npm', 'run', 'build'])
+}
+
+tasks.register('copyFrontend', Copy) {
+	dependsOn 'npmBuild'
+	from file("$frontendDir/dist")
+	into file("$projectDir/src/main/resources/static")
+	// 이전 빌드의 해시 에셋이 쌓이지 않도록 assets 는 갱신
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+// 실행/패키징 시 최신 프론트 산출물이 static 에 포함되도록
+// (npm이 없는 환경 — Railway Docker 빌더 — 에서는 이 연결을 아예 만들지 않아
+//  커밋된 static 리소스만으로 bootJar 가 진행된다)
+if (npmAvailable) {
+    tasks.named('processResources') { dependsOn 'copyFrontend' }
+}
