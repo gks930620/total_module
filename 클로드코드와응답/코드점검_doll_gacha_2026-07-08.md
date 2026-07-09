@@ -41,7 +41,7 @@
 
 | # | 위치 | 내용 | 개선 | 난이도·우선순위 |
 |---|------|------|------|------|
-| J10 | 응답 DTO 19개 (`*DTO` class) | 대부분 `@Getter @Setter @Builder`의 **가변 클래스**. 응답 전용 DTO는 불변이 안전(setter 노출 불필요). record는 1개뿐 | 응답 DTO를 **record**로 전환(요청 DTO는 검증/바인딩 때문에 class 유지 무방). 점진적으로 | 중 · 낮음 |
+| ~~J10~~ | 응답 DTO 19개 (`*DTO` class) | ~~record로 전환 제안~~ → **철회.** DTO는 record가 아니라 class로 유지하는 것이 컨벤션(2026-07-08 확정, [`total_설계/코드컨벤션.md`](../total_설계/코드컨벤션.md) §0). QueryDSL bean 프로젝션 호환 + 팀 선호. **이 항목은 무시.** 오히려 유일한 record 1개가 있다면 class로 통일하는 게 맞음 | — · — |
 | J11 | `ReviewService.java:47-49` | `stats == null || stats.getTotalReviews() == null || stats.getTotalReviews() == 0` 3중 널체크 | Repository가 애초에 빈 통계를 반환하게 하거나 `Optional`/기본값 처리로 단순화 | 소 · 낮음 |
 | J12 | `CommunityDTO.java:44` | `.commentCount(0L) // 실제 값은 Repository에서 설정` — 기본값과 실제값 세팅 지점이 분리돼 추적 어려움 | Repository 프로젝션에서 한 번에 채우거나, 주석 의도를 메서드명으로 표현 | 소 · 낮음 |
 | J13 | `FileController.java:58-60` | content-type을 `if/else if` 확장자 분기로 수동 결정 | `Files.probeContentType` 또는 `MediaTypeFactory.getMediaType(filename)` 사용 | 소 · 낮음 |
