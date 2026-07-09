@@ -120,3 +120,6 @@ application-prod.properties
 # 커밋된 static(index.html + assets/*.js/*.css)을 그대로 bootJar 에 포함시키기 때문.
 # (이전의 /src/main/resources/static/assets/, vite.svg ignore 는 배포 산출물 누락
 #  원인이라 제거함 — Railway 배포 대응)
+
+# QueryDSL 생성물 — 빌드 시 자동 생성되므로 커밋하지 않는다
+src/main/generated/

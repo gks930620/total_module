@@ -6,7 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
-class DemoApplicationTests {
+class DollGachaApplicationTests {
 
 	@Test
 	void contextLoads() {

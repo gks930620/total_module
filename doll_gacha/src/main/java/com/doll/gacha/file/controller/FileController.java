@@ -14,6 +14,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,31 +43,36 @@ public class FileController {
      */
     @GetMapping("/images/{filename:.+}")
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+        Resource resource = loadLocalFile(filename);
+        if (resource == null || !resource.exists() || !resource.isReadable()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        MediaType contentType = MediaTypeFactory.getMediaType(filename)
+                .orElse(MediaType.IMAGE_JPEG); // 확장자로 추론 실패 시 이미지 기본값
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .body(resource);
+    }
+
+    /**
+     * 업로드 디렉토리 내부의 로컬 파일을 Resource로 로드한다.
+     * 경로 순회(../) 방어 포함. 경로가 잘못되면 null 반환(= 404 처리).
+     */
+    private Resource loadLocalFile(String storedFileName) {
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path file = uploadPath.resolve(storedFileName).normalize();
+
+        // 경로 순회 방어: 정규화 후에도 업로드 디렉토리 내부여야 함
+        if (!file.startsWith(uploadPath)) {
+            log.warn("잘못된 파일 경로 접근 시도: {}", storedFileName);
+            return null;
+        }
         try {
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Path file = uploadPath.resolve(filename).normalize();
-
-            // 경로 순회 방어: 정규화 후에도 업로드 디렉토리 내부여야 함
-            if (!file.startsWith(uploadPath)) {
-                log.warn("잘못된 파일 경로 접근 시도: {}", filename);
-                return ResponseEntity.badRequest().build();
-            }
-
-            Resource resource = new UrlResource(file.toUri());
-
-            if (resource.exists() && resource.isReadable()) {
-                String contentType = "image/jpeg"; // 기본값
-                if (filename.toLowerCase().endsWith(".png")) contentType = "image/png";
-                else if (filename.toLowerCase().endsWith(".gif")) contentType = "image/gif";
-
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
+            return new UrlResource(file.toUri());
         } catch (MalformedURLException e) {
-            return ResponseEntity.badRequest().build();
+            log.warn("파일 경로 변환 실패: {}", storedFileName);
+            return null;
         }
     }
 
@@ -145,53 +151,38 @@ public class FileController {
      * @return 파일 리소스 (원본 파일명으로 다운로드)
      */
     @GetMapping("/api/files/download/{fileId}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) {
-        try {
-            // 1. DB에서 파일 정보 조회
-            FileEntity fileEntity = fileService.getFileById(fileId);
-            if (fileEntity == null) {
-                log.warn("파일을 찾을 수 없습니다: fileId={}", fileId);
-                return ResponseEntity.notFound().build();
-            }
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) throws MalformedURLException {
+        // 1. DB에서 파일 정보 조회 (없으면 EntityNotFoundException → GlobalExceptionHandler 404)
+        FileEntity fileEntity = fileService.getFileById(fileId);
 
-            String filePath = fileEntity.getFilePath();
-            Resource resource;
+        String filePath = fileEntity.getFilePath();
+        Resource resource;
 
-            // 2. CDN URL인지 로컬 파일인지 판단
-            if (filePath != null && filePath.startsWith("http")) {
-                // Supabase CDN URL → URL Resource로 로드
-                log.info("CDN 파일 다운로드: fileId={}, url={}", fileId, filePath);
-                resource = new UrlResource(filePath);
-            } else {
-                // 로컬 파일 → 기존 방식
-                Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-                Path file = uploadPath.resolve(fileEntity.getStoredFileName());
-                log.info("로컬 파일 다운로드: fileId={}, path={}", fileId, file);
-                resource = new UrlResource(file.toUri());
-            }
-
-            if (!resource.exists() || !resource.isReadable()) {
-                log.error("파일을 찾을 수 없습니다: {}", filePath);
-                return ResponseEntity.notFound().build();
-            }
-
-            // 3. 원본 파일명 인코딩 (한글 파일명 지원)
-            String encodedFileName = URLEncoder.encode(fileEntity.getOriginalFileName(), StandardCharsets.UTF_8)
-                    .replaceAll("\\+", "%20");
-
-            // 4. 다운로드 응답 헤더 설정 (원본 파일명으로!)
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
-                    .body(resource);
-
-        } catch (MalformedURLException e) {
-            log.error("파일 경로 오류: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("파일 다운로드 실패: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+        // 2. CDN URL인지 로컬 파일인지 판단
+        if (filePath != null && filePath.startsWith("http")) {
+            // Supabase CDN URL → URL Resource로 로드
+            log.info("CDN 파일 다운로드: fileId={}, url={}", fileId, filePath);
+            resource = new UrlResource(filePath);
+        } else {
+            // 로컬 파일 (dev 모드)
+            log.info("로컬 파일 다운로드: fileId={}", fileId);
+            resource = loadLocalFile(fileEntity.getStoredFileName());
         }
+
+        if (resource == null || !resource.exists() || !resource.isReadable()) {
+            log.warn("파일 리소스에 접근할 수 없습니다: fileId={}, path={}", fileId, filePath);
+            return ResponseEntity.notFound().build();
+        }
+
+        // 3. 원본 파일명 인코딩 (한글 파일명 지원)
+        String encodedFileName = URLEncoder.encode(fileEntity.getOriginalFileName(), StandardCharsets.UTF_8)
+                .replaceAll("\\+", "%20");
+
+        // 4. 다운로드 응답 헤더 설정 (원본 파일명으로!)
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
+                .body(resource);
     }
 
     /**

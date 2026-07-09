@@ -1,5 +1,6 @@
 package com.doll.gacha.file.service;
 
+import com.doll.gacha.common.exception.EntityNotFoundException;
 import com.doll.gacha.file.dto.FileDetailDTO;
 import com.doll.gacha.file.entity.FileEntity;
 import com.doll.gacha.file.repository.FileRepository;
@@ -19,10 +20,6 @@ public class FileService {
 
     private final FileRepository fileRepository;
 
-    /**
-     * 파일 경로 조회 (통합 검색 - QueryDSL 동적 쿼리)
-     * @param refId 참조 ID
-     * @param refType DOLL_SHOP, COMMUNITY, REVIEW, DOLL
     /**
      * 파일 경로 조회 (통합 검색 - QueryDSL 동적 쿼리)
      * @param refId 참조 ID
@@ -83,9 +80,11 @@ public class FileService {
      * 파일 ID로 파일 정보 조회 (다운로드용)
      * @param fileId 파일 ID
      * @return 파일 엔티티
+     * @throws EntityNotFoundException 파일이 없으면 (GlobalExceptionHandler가 404로 처리)
      */
     public FileEntity getFileById(Long fileId) {
-        return fileRepository.findById(fileId).orElse(null);
+        return fileRepository.findById(fileId)
+                .orElseThrow(() -> EntityNotFoundException.of("파일", fileId));
     }
 
     /**
