@@ -97,14 +97,21 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
 
 ---
 
-## 5.5. ⚠️ 가게(인형뽑기) 데이터 수동 적재 — **안 하면 맵/목록이 빈 채로 뜬다**
+## 5.5. 가게(인형뽑기) 데이터 적재 — **실데이터, 운영에도 그대로 넣는다**
 
-운영(prod)은 `spring.sql.init.mode: never`라 시드 `.sql`을 **자동 실행하지 않는다.** 이유:
-- `data-users/community/review/comment/files.sql`은 **데모/개발용 가짜 데이터**이고,
-  특히 `data-files.sql`은 `C:/workspace/...` 로컬 경로가 박혀 있어 운영에 넣으면 안 된다.
-- 따라서 운영에 넣을 것은 **실제 가게 참조 데이터인 `data-dollshop.sql` 하나뿐**이다. (나머지는 실제 사용자가 로그인/작성하며 채워짐)
+### 이 데이터의 정체
+- `data-dollshop.sql`은 **공공 API로 실제로 받아온 진짜 가게 데이터(2026년 1월 스냅샷)**다. 더미가 아니다.
+- **로컬·운영 공통으로 이 파일을 그대로 쓴다.** (로컬은 기동 시 자동 로드, 운영은 아래처럼 수동 적재)
+- 갱신 정책: **주기적으로(월 1회 / 연 1회 예정) 수동 재적재**. API 자동 수집·갱신은 **향후 과제**.
+  즉 지금은 "API로 받아둔 스냅샷 → 수동 적재"이고, 나중에 이 앞단(API 수집)을 자동화한다.
 
-### 적재 방법 (최초 1회)
+### 왜 운영은 자동 로드가 아니라 수동인가
+- 운영(prod)은 `spring.sql.init.mode: never` → 시드 `.sql`을 **자동 실행하지 않는다.** (재배포마다 재INSERT되며 충돌하는 것을 피함)
+- 그리고 `data-users/community/review/comment/files.sql`은 **데모/개발용 가짜 데이터**라 운영에 넣지 않는다
+  (특히 `data-files.sql`은 `C:/workspace/...` 로컬 경로가 박혀 있음). 이들은 실제 사용자가 로그인/작성하며 채워진다.
+- 따라서 운영에 사람이 직접 넣는 것은 **`data-dollshop.sql` 하나뿐**이고, 갱신 때도 이 파일만 다시 적재한다.
+
+### 적재 방법 (최초 1회 + 갱신 때마다)
 1. **앱을 먼저 한 번 배포**해서 테이블이 생성된 상태로 만든다(위 §5).
 2. Railway `mysql-doll` 서비스 → `Variables`/`Connect` 에서 **공개 접속 정보**(host, port, user, password, db)를 확인한다.
 3. 로컬에서 **UTF-8로** `data-dollshop.sql`을 적재한다 (⚠️ 인코딩 주의 — 안 그러면 로컬에서 겪은 한글 깨짐이 운영에서 재발):
@@ -115,7 +122,8 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
    - GUI(DBeaver/Workbench)로 열어 실행해도 됨 — **인코딩을 UTF-8로** 지정할 것.
 4. 적재 후 `SELECT count(*), gubun1 FROM doll_shop GROUP BY gubun1;` 로 한글이 안 깨졌는지 확인.
 
-> 이 데이터는 Railway MySQL 볼륨에 **영속**되므로 재배포해도 유지된다(1회만 적재하면 됨).
+> 이 데이터는 Railway MySQL 볼륨에 **영속**되므로 재배포해도 유지된다. 최초 1회 적재하고, 이후 데이터 갱신 시에만 다시 적재하면 된다.
+> 갱신 시 기존 행과 겹치면(같은 PK) 방식 결정 필요 — 전체 삭제 후 재적재(`TRUNCATE doll_shop;` 후 적재)가 가장 단순.
 
 ---
 
