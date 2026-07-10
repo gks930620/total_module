@@ -22,7 +22,8 @@
 > businesscard_qr의 mysql과 **분리**한다 (테이블명 충돌 방지 + 관리 분리).
 
 1. Railway 프로젝트 캔버스 → `+ New` → `Database` → `MySQL`
-2. 서비스 이름을 알아보기 쉽게 변경 (예: `mysql-doll`)
+2. 서비스 이름을 **`doll_gacha_mysql`** 로 변경 (**규칙: `<프로젝트명>_mysql`** — 공백 없이).
+   > 이 이름이 아래 §3의 `${{doll_gacha_mysql.XXX}}` 참조와 정확히 일치해야 한다.
 3. 생성 후 `Variables` 탭에 `MYSQLHOST/MYSQLPORT/MYSQLDATABASE/MYSQLUSER/MYSQLPASSWORD` 자동 생성 확인
 4. (볼륨이 자동으로 붙음 → 재배포에도 데이터 보존)
 
@@ -43,15 +44,19 @@
 
 ## 3. doll_gacha 서비스 환경변수 입력
 
-`doll_gacha` 서비스 → `Variables` 에 아래를 넣는다. `${{mysql-doll.XXX}}`는 1단계 DB 서비스명에 맞춘다.
+`doll_gacha` 서비스 → `Variables` 에 아래를 넣는다.
+
+> **`${{doll_gacha_mysql.XXX}}` = Railway 참조 변수** (다른 서비스의 값을 끌어옴). 형식은 `${{서비스명.변수명}}`.
+> DB 서비스명이 다르면 `doll_gacha_mysql` 부분을 그 이름으로 바꾼다. **각 참조마다 `.`(점) 필수**, 서비스명에 **공백 금지**.
+> 입력창에서 `${{` 를 치면 자동완성 목록이 뜨니 그걸로 넣는 게 가장 안전(오타 방지).
 
 ```env
 APP_MODULE=doll_gacha
 SPRING_PROFILES_ACTIVE=prod
 
-SPRING_DATASOURCE_URL=jdbc:mysql://${{mysql-doll.MYSQLHOST}}:${{mysql-doll.MYSQLPORT}}/${{mysql-doll.MYSQLDATABASE}}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-SPRING_DATASOURCE_USERNAME=${{mysql-doll.MYSQLUSER}}
-SPRING_DATASOURCE_PASSWORD=${{mysql-doll.MYSQLPASSWORD}}
+SPRING_DATASOURCE_URL=jdbc:mysql://${{doll_gacha_mysql.MYSQLHOST}}:${{doll_gacha_mysql.MYSQLPORT}}/${{doll_gacha_mysql.MYSQLDATABASE}}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+SPRING_DATASOURCE_USERNAME=${{doll_gacha_mysql.MYSQLUSER}}
+SPRING_DATASOURCE_PASSWORD=${{doll_gacha_mysql.MYSQLPASSWORD}}
 
 JWT_SECRET_KEY=<랜덤 긴 문자열>
 
@@ -112,7 +117,7 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
 
 ### 적재 방법 (최초 1회 + 갱신 때마다)
 1. **앱을 먼저 한 번 배포**해서 테이블이 생성된 상태로 만든다(위 §5).
-2. Railway `mysql-doll` 서비스 → `Variables`/`Connect` 에서 **공개 접속 정보**(host, port, user, password, db)를 확인한다.
+2. Railway `doll_gacha_mysql` 서비스 → `Variables`/`Connect` 에서 **공개 접속 정보**(host, port, user, password, db)를 확인한다.
 3. 로컬에서 **UTF-8로** `data-dollshop.sql`을 적재한다 (⚠️ 인코딩 주의 — 안 그러면 로컬에서 겪은 한글 깨짐이 운영에서 재발):
    ```bash
    mysql --default-character-set=utf8mb4 -h <host> -P <port> -u <user> -p<password> <db> \
