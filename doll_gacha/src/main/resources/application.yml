@@ -46,6 +46,7 @@ spring:
   sql:
     init:
       mode: always
+      encoding: UTF-8            # 시드 .sql은 UTF-8. 미설정 시 JDK17+한글 Windows가 CP949로 읽어 한글이 깨진다.
       continue-on-error: true    # 파일 모드 재시작 시 중복 시드 INSERT 오류 무시
       data-locations:
         - classpath:data-users.sql

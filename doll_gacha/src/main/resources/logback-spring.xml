@@ -56,7 +56,8 @@
 
         <!-- 패키지별 로그 레벨 설정 (로컬 디버깅용 — prod 는 application-prod.yml 의 INFO/WARN 적용) -->
         <logger name="com.doll.gacha" level="DEBUG"/>
-        <logger name="org.springframework.security" level="DEBUG"/>
+        <!-- security 는 요청마다 Securing/Secured 를 DEBUG 로 찍어 콘솔을 도배한다 → INFO 로 낮춤 -->
+        <logger name="org.springframework.security" level="INFO"/>
         <logger name="org.hibernate.SQL" level="DEBUG"/>
         <logger name="org.hibernate.type.descriptor.sql" level="TRACE"/>
 

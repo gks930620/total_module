@@ -127,7 +127,12 @@ export default function DollShopDetailPage() {
               src={shopImage}
               alt="매장 이미지"
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
-              onError={(e) => { e.target.src = DEFAULT_IMAGE }}
+              onError={(e) => {
+                // 폴백 이미지도 실패하면 재요청하지 않는다(무한 루프 방지)
+                if (e.target.dataset.fallback) return
+                e.target.dataset.fallback = '1'
+                e.target.src = DEFAULT_IMAGE
+              }}
             />
           </div>
         </div>

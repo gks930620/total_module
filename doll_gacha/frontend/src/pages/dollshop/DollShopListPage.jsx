@@ -200,7 +200,12 @@ function ShopItem({ shop, onClick }) {
         <img
           src={shop.imagePath || '/images/default-shop.png'}
           alt={shop.businessName}
-          onError={(e) => { e.target.src = '/images/default-shop.png' }}
+          onError={(e) => {
+            // 폴백 이미지도 실패하면 재요청하지 않는다(무한 루프 방지)
+            if (e.target.dataset.fallback) return
+            e.target.dataset.fallback = '1'
+            e.target.src = '/images/default-shop.png'
+          }}
         />
       </div>
       <div className="shop-info">

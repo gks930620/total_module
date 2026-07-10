@@ -1,20 +1,12 @@
 package com.doll.gacha.common.controller;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -28,31 +20,6 @@ class FileControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Value("${file.upload-dir:./uploads/}")
-    private String uploadDir;
-
-    private Path testFilePath;
-
-    @BeforeEach
-    void setUp() throws IOException {
-        // 테스트용 임시 이미지 파일 생성
-        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-        Files.createDirectories(uploadPath);
-
-        testFilePath = uploadPath.resolve("test-image.jpeg");
-        // 간단한 JPEG 헤더 (실제 이미지는 아니지만 파일 존재 테스트용)
-        byte[] jpegHeader = new byte[]{(byte)0xFF, (byte)0xD8, (byte)0xFF, (byte)0xE0};
-        Files.write(testFilePath, jpegHeader);
-    }
-
-    @AfterEach
-    void tearDown() throws IOException {
-        // 테스트 파일 정리
-        if (testFilePath != null && Files.exists(testFilePath)) {
-            Files.delete(testFilePath);
-        }
-    }
 
     @Test
     @DisplayName("파일 조회 - 썸네일만 조회")
@@ -114,21 +81,8 @@ class FileControllerIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    @DisplayName("파일 서빙 - 실제 이미지 파일")
-    void serveFile_success() throws Exception {
-        // setUp에서 생성한 테스트 파일로 테스트
-        mockMvc.perform(get("/images/test-image.jpeg"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(header().exists("Content-Type"));
-    }
-
-    @Test
-    @DisplayName("파일 서빙 - 존재하지 않는 파일")
-    void serveFile_notFound() throws Exception {
-        mockMvc.perform(get("/images/notexist.jpeg"))
-                .andDo(print())
-                .andExpect(status().isNotFound());
-    }
+    // 참고: 과거 GET /images/** 서빙 컨트롤러(serveFile)는 제거됨
+    // (정적 리소스 static/images/** 를 가려 default-shop.png가 404 나던 문제 수정).
+    // 업로드 파일 서빙은 /uploads/**(WebConfig), 이미지는 정적 핸들러가 담당하므로
+    // 이 컨트롤러 단위의 서빙 테스트는 더 이상 유효하지 않다.
 }

@@ -14,7 +14,6 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,24 +35,10 @@ public class FileController {
     @Value("${file.upload-dir:./uploads/}")
     private String uploadDir;
 
-    /**
-     * 이미지 파일 서빙 (HTML img 태그에서 호출)
-     * - 로컬 저장 모드에서만 사용
-     * - Supabase 모드에서는 CDN URL로 직접 접근하므로 이 API 사용 안 함
-     */
-    @GetMapping("/images/{filename:.+}")
-    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-        Resource resource = loadLocalFile(filename);
-        if (resource == null || !resource.exists() || !resource.isReadable()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        MediaType contentType = MediaTypeFactory.getMediaType(filename)
-                .orElse(MediaType.IMAGE_JPEG); // 확장자로 추론 실패 시 이미지 기본값
-        return ResponseEntity.ok()
-                .contentType(contentType)
-                .body(resource);
-    }
+    // 참고: 업로드된 로컬 파일은 /uploads/** (WebConfig 리소스 핸들러)로 서빙된다.
+    // 과거의 GET /images/** 서빙 컨트롤러는 제거했다 — 그 매핑이 정적 리소스
+    // static/images/**(예: default-shop.png)를 가려서 404를 냈고, 프론트 img onError가
+    // 같은 URL을 무한 재요청하는 문제가 있었다. 이제 /images/**는 Spring 기본 정적 핸들러가 처리한다.
 
     /**
      * 업로드 디렉토리 내부의 로컬 파일을 Resource로 로드한다.
