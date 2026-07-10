@@ -9,18 +9,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 파일 유틸리티
- * - FileStorageStrategy를 통해 파일 저장 (로컬 또는 Supabase)
- * - 환경에 따라 스프링이 적절한 전략 구현체를 자동 주입
+ * - FileStorageStrategy(DbFileStorage)를 통해 파일 바이트를 DB에 저장/삭제
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class FileUtil {
 
-    // 스프링이 환경에 맞는 구현체 자동 주입
-    // - supabase.enabled=false → LocalFileStorage
-    // - supabase.enabled=true  → SupabaseFileStorage
-    private final FileStorageStrategy fileStorageStrategy;
+    private final FileStorageStrategy fileStorageStrategy; // 유일 구현: DbFileStorage
 
     /**
      * 파일 저장

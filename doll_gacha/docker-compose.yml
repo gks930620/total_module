@@ -53,12 +53,7 @@ services:
 
       # 앱 URL (프로덕션 환경)
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
-
-      # Supabase Storage (prod 프로파일은 파일 업로드 시 Supabase 사용 — 비워두면 업로드 기능만 실패)
-      SUPABASE_URL: ${SUPABASE_URL:-}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
-    volumes:
-      - ./uploads:/app/uploads
+      # 파일은 DB(stored_files)에 저장 — 외부 스토리지/디스크 볼륨 불필요
     depends_on:
       db:
         condition: service_healthy

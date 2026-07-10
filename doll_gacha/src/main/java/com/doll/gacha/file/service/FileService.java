@@ -5,6 +5,7 @@ import com.doll.gacha.file.dto.FileDetailDTO;
 import com.doll.gacha.file.entity.FileEntity;
 import com.doll.gacha.file.repository.FileRepository;
 import com.doll.gacha.file.strategy.FileStorageStrategy.FileUploadResult;
+import com.doll.gacha.file.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,13 +20,14 @@ import java.util.List;
 public class FileService {
 
     private final FileRepository fileRepository;
+    private final FileUtil fileUtil;
 
     /**
      * 파일 경로 조회 (통합 검색 - QueryDSL 동적 쿼리)
      * @param refId 참조 ID
      * @param refType DOLL_SHOP, COMMUNITY, REVIEW, DOLL
      * @param usage THUMBNAIL, IMAGES, ATTACHMENT (선택, null 가능)
-     * @return 파일 웹 경로 리스트 (Supabase: CDN URL, 로컬: /uploads/xxx)
+     * @return 파일 웹 경로 리스트 (/uploads/저장파일명)
      */
     public List<String> getFilePaths(Long refId, String refType, String usage) {
         FileEntity.RefType type = FileEntity.RefType.valueOf(refType);
@@ -36,7 +38,7 @@ public class FileService {
         // QueryDSL 동적 쿼리 실행
         List<FileEntity> files = fileRepository.searchFiles(refId, type, usageType);
 
-        // DB에 저장된 filePath 그대로 반환 (CDN URL 또는 /uploads/xxx)
+        // DB에 저장된 filePath(/uploads/저장파일명) 그대로 반환
         return files.stream()
                 .map(FileEntity::getFilePath)
                 .toList();
@@ -48,7 +50,7 @@ public class FileService {
      * @param refId 참조 ID
      * @param refType 참조 타입
      * @param usage 파일 용도
-     * @return 저장된 파일 웹 경로 리스트 (Supabase: CDN URL, 로컬: /uploads/xxx)
+     * @return 저장된 파일 웹 경로 리스트 (/uploads/저장파일명)
      */
     @Transactional
     public List<String> saveFiles(List<FileUploadResult> uploadResults, Long refId,
@@ -58,7 +60,7 @@ public class FileService {
                     FileEntity fileEntity = FileEntity.builder()
                             .originalFileName(result.getOriginalFilename())
                             .storedFileName(result.getStoredFilename())
-                            .filePath(result.getWebPath())  // 웹 경로 저장 (CDN URL 또는 /uploads/xxx)
+                            .filePath(result.getWebPath())  // 웹 경로 저장 (/uploads/저장파일명)
                             .fileSize(result.getFileSize())
                             .contentType(result.getContentType())
                             .refId(refId)
@@ -71,7 +73,7 @@ public class FileService {
                     log.info("파일 정보 DB 저장 완료 - refId: {}, refType: {}, 파일명: {}, 경로: {}",
                             refId, refType, result.getStoredFilename(), result.getWebPath());
 
-                    return result.getWebPath();  // CDN URL 또는 /uploads/xxx 반환
+                    return result.getWebPath();  // /uploads/저장파일명 반환
                 })
                 .toList();
     }
@@ -88,7 +90,7 @@ public class FileService {
     }
 
     /**
-     * 파일 삭제 (DB에서만 삭제, 물리 파일은 배치로 처리)
+     * 파일 삭제 (메타데이터 + 실제 바이트 함께 삭제)
      * @param fileId 삭제할 파일 ID
      */
     @Transactional
@@ -96,6 +98,8 @@ public class FileService {
         FileEntity fileEntity = fileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다: " + fileId));
 
+        // 메타데이터 + 실제 바이트(stored_files) 함께 삭제 (orphan LONGBLOB 방지)
+        fileUtil.deleteFile(fileEntity.getFilePath());
         fileRepository.delete(fileEntity);
         log.info("파일 삭제 완료 - fileId: {}, 파일명: {}", fileId, fileEntity.getOriginalFileName());
     }

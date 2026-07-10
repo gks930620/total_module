@@ -1,5 +1,9 @@
 # 작업내용 — doll_gacha 모듈 편입 + Railway 배포 적합화 (2026-07-08)
 
+> ⚠️ **2026-07-10 갱신**: 이 문서 작성 당시 doll_gacha는 파일 저장에 **Supabase**를 썼으나,
+> 이후 **DB(MySQL LONGBLOB) 저장으로 전환하고 Supabase를 완전히 제거**했다(모든 프로젝트 Railway MySQL 사용).
+> 따라서 아래 Supabase 관련 env(`SUPABASE_URL/ANON_KEY`)·설명은 **더 이상 유효하지 않다.** 최신 기준: `total_설계/코드컨벤션.md` §5-3, `railway_doll_gacha_배포가이드.md`.
+
 > 브랜치: `doll_gacha모듈추가브랜치`
 > 요청: "doll_gacha 프로젝트(기본 동작은 잘 됨) 전체 검사 및 수정 — **배포 환경에서 동작하도록**"
 > 절차 기준: [`total_설계/아키텍처_방향결정.md`](../total_설계/아키텍처_방향결정.md) §3, [`total_설계/로컬프로젝트_편입시_정리할것.md`](../total_설계/로컬프로젝트_편입시_정리할것.md)

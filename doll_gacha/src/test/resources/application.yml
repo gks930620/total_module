@@ -64,12 +64,3 @@ jwt:
 app:
   cookie:
     secure: false
-
-supabase:
-  url: ""
-  key: ""
-  bucket: uploads
-  enabled: false
-
-file:
-  upload-dir: ./build/test-uploads

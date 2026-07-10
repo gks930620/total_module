@@ -111,13 +111,6 @@ app:
     # 앱(target=app) OAuth2 완료 후 토큰 전달 리다이렉트 베이스 (로컬: Android 에뮬레이터)
     app-redirect-base: ${APP_OAUTH2_REDIRECT_BASE:http://10.0.2.2:8080}
 
-# Supabase Storage 설정 (로컬: 비활성화 → LocalFileStorage 사용)
-supabase:
-  url: ${SUPABASE_URL:}
-  key: ${SUPABASE_ANON_KEY:}
-  bucket: uploads
-  enabled: false
-
 # Actuator
 management:
   endpoints:
@@ -137,6 +130,4 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# 파일 업로드 경로 (로컬)
-file:
-  upload-dir: ./uploads
+# (파일은 DB(stored_files)에 저장 — 디스크 업로드 경로 불필요)

@@ -1,16 +1,16 @@
 package com.doll.gacha.file.controller;
 
 import com.doll.gacha.common.dto.ApiResponse;
+import com.doll.gacha.common.exception.EntityNotFoundException;
 import com.doll.gacha.file.dto.FileDetailDTO;
 import com.doll.gacha.file.entity.FileEntity;
+import com.doll.gacha.file.entity.StoredFileEntity;
+import com.doll.gacha.file.repository.StoredFileRepository;
 import com.doll.gacha.file.service.FileService;
 import com.doll.gacha.file.strategy.FileStorageStrategy.FileUploadResult;
 import com.doll.gacha.file.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,11 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -31,34 +28,25 @@ import java.util.List;
 public class FileController {
     private final FileService fileService;
     private final FileUtil fileUtil;
-
-    @Value("${file.upload-dir:./uploads/}")
-    private String uploadDir;
-
-    // 참고: 업로드된 로컬 파일은 /uploads/** (WebConfig 리소스 핸들러)로 서빙된다.
-    // 과거의 GET /images/** 서빙 컨트롤러는 제거했다 — 그 매핑이 정적 리소스
-    // static/images/**(예: default-shop.png)를 가려서 404를 냈고, 프론트 img onError가
-    // 같은 URL을 무한 재요청하는 문제가 있었다. 이제 /images/**는 Spring 기본 정적 핸들러가 처리한다.
+    private final StoredFileRepository storedFileRepository;
 
     /**
-     * 업로드 디렉토리 내부의 로컬 파일을 Resource로 로드한다.
-     * 경로 순회(../) 방어 포함. 경로가 잘못되면 null 반환(= 404 처리).
+     * 업로드 이미지 인라인 서빙 (HTML img 태그에서 호출).
+     * DB(stored_files)에 저장된 바이트를 스트리밍한다. 저장 백엔드가 DB라 배포/재시작에 무관하게 동작.
+     * (경로 계약: DollShop/파일 메타의 imagePath = /uploads/{storedFileName})
      */
-    private Resource loadLocalFile(String storedFileName) {
-        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-        Path file = uploadPath.resolve(storedFileName).normalize();
+    @GetMapping("/uploads/{storedFileName:.+}")
+    public ResponseEntity<byte[]> serveUpload(@PathVariable String storedFileName) {
+        return storedFileRepository.findById(storedFileName)
+                .map(this::toInlineResponse)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
-        // 경로 순회 방어: 정규화 후에도 업로드 디렉토리 내부여야 함
-        if (!file.startsWith(uploadPath)) {
-            log.warn("잘못된 파일 경로 접근 시도: {}", storedFileName);
-            return null;
-        }
-        try {
-            return new UrlResource(file.toUri());
-        } catch (MalformedURLException e) {
-            log.warn("파일 경로 변환 실패: {}", storedFileName);
-            return null;
-        }
+    private ResponseEntity<byte[]> toInlineResponse(StoredFileEntity file) {
+        MediaType mediaType = (file.getContentType() == null || file.getContentType().isBlank())
+                ? MediaType.APPLICATION_OCTET_STREAM
+                : MediaType.parseMediaType(file.getContentType());
+        return ResponseEntity.ok().contentType(mediaType).body(file.getData());
     }
 
     /**
@@ -94,15 +82,15 @@ public class FileController {
             @RequestParam FileEntity.RefType refType,
             @RequestParam FileEntity.Usage usage) {
 
-        // 1. FileUtil로 물리적 파일 저장
+        // 1. FileUtil로 파일 바이트를 DB에 저장
         List<FileUploadResult> uploadResults = files.stream()
                 .filter(file -> !file.isEmpty())
                 .map(fileUtil::saveFile)
                 .toList();
 
-        log.info("파일 물리적 저장 완료 - 파일 수: {}", uploadResults.size());
+        log.info("파일 저장 완료 - 파일 수: {}", uploadResults.size());
 
-        // 2. FileService로 DB에 파일 정보 저장
+        // 2. FileService로 DB에 파일 메타 정보 저장
         List<String> savedPaths = fileService.saveFiles(uploadResults, refId, refType, usage);
 
         log.info("파일 업로드 완료 - refId: {}, refType: {}, 파일 수: {}", refId, refType, savedPaths.size());
@@ -113,10 +101,6 @@ public class FileController {
 
     /**
      * 첨부파일 상세 정보 조회 API (원본 파일명 포함)
-     * @param refId 참조 ID
-     * @param refType DOLL_SHOP, COMMUNITY, REVIEW, DOLL
-     * @param usage THUMBNAIL, IMAGES, ATTACHMENT (선택)
-     * @return 파일 상세 정보 리스트
      */
     @GetMapping("/api/files/detail")
     public ResponseEntity<ApiResponse<List<FileDetailDTO>>> getFileDetails(
@@ -129,57 +113,37 @@ public class FileController {
     }
 
     /**
-     * 첨부파일 다운로드 API
-     * - 로컬 파일: 직접 서빙
-     * - Supabase 파일: CDN에서 가져와서 원본 파일명으로 응답
-     * @param fileId 파일 ID
-     * @return 파일 리소스 (원본 파일명으로 다운로드)
+     * 첨부파일 다운로드 API (원본 파일명으로 저장되게 응답).
+     * DB(stored_files)에서 바이트를 읽어 attachment 로 내려준다.
+     * @param fileId 파일 메타 ID
      */
     @GetMapping("/api/files/download/{fileId}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long fileId) throws MalformedURLException {
-        // 1. DB에서 파일 정보 조회 (없으면 EntityNotFoundException → GlobalExceptionHandler 404)
+    public ResponseEntity<byte[]> downloadFile(@PathVariable Long fileId) {
+        // 1. 파일 메타 조회 (없으면 EntityNotFoundException → GlobalExceptionHandler 404)
         FileEntity fileEntity = fileService.getFileById(fileId);
 
-        String filePath = fileEntity.getFilePath();
-        Resource resource;
-
-        // 2. CDN URL인지 로컬 파일인지 판단
-        if (filePath != null && filePath.startsWith("http")) {
-            // Supabase CDN URL → URL Resource로 로드
-            log.info("CDN 파일 다운로드: fileId={}, url={}", fileId, filePath);
-            resource = new UrlResource(filePath);
-        } else {
-            // 로컬 파일 (dev 모드)
-            log.info("로컬 파일 다운로드: fileId={}", fileId);
-            resource = loadLocalFile(fileEntity.getStoredFileName());
-        }
-
-        if (resource == null || !resource.exists() || !resource.isReadable()) {
-            log.warn("파일 리소스에 접근할 수 없습니다: fileId={}, path={}", fileId, filePath);
-            return ResponseEntity.notFound().build();
-        }
+        // 2. 저장 파일명으로 DB 바이트 조회
+        StoredFileEntity stored = storedFileRepository.findById(fileEntity.getStoredFileName())
+                .orElseThrow(() -> EntityNotFoundException.of("파일", fileEntity.getStoredFileName()));
 
         // 3. 원본 파일명 인코딩 (한글 파일명 지원)
         String encodedFileName = URLEncoder.encode(fileEntity.getOriginalFileName(), StandardCharsets.UTF_8)
                 .replaceAll("\\+", "%20");
 
-        // 4. 다운로드 응답 헤더 설정 (원본 파일명으로!)
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
-                .body(resource);
+                .body(stored.getData());
     }
 
     /**
      * 파일 삭제 API
      * @param fileId 삭제할 파일 ID
-     * @return 성공 시 삭제 완료 메시지
      */
     @DeleteMapping("/api/files/{fileId}")
     public ResponseEntity<ApiResponse<Void>> deleteFile(@PathVariable Long fileId) {
         log.info("파일 삭제 요청: fileId={}", fileId);
-        // 미존재 파일은 FileService 가 IllegalArgumentException("...찾을 수 없습니다") 을 던지고
-        // GlobalExceptionHandler 가 표준 404 ErrorResponse 로 처리
+        // 미존재 파일은 FileService 가 예외를 던지고 GlobalExceptionHandler 가 표준 404 로 처리
         fileService.deleteFile(fileId);
         return ResponseEntity.ok(ApiResponse.success("파일이 삭제되었습니다"));
     }

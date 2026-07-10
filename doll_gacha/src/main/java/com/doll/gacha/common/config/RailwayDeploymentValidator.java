@@ -29,15 +29,6 @@ public class RailwayDeploymentValidator {
     @Value("${jwt.secret:}")
     private String jwtSecret;
 
-    @Value("${supabase.url:}")
-    private String supabaseUrl;
-
-    @Value("${supabase.key:}")
-    private String supabaseKey;
-
-    @Value("${supabase.enabled:false}")
-    private boolean supabaseEnabled;
-
     @Value("${KAKAO_CLIENT_ID:}")
     private String kakaoClientId;
 
@@ -85,20 +76,7 @@ public class RailwayDeploymentValidator {
                     "[Railway] JWT 시크릿이 비어 있습니다. 환경변수 JWT_SECRET_KEY 를 설정하세요.");
         }
 
-        // 4. Supabase Storage — prod 는 supabase.enabled=true 이므로 URL/KEY 필수
-        //    (없으면 파일 업로드 시점에 런타임 오류 → 기동 시점에 미리 실패)
-        if (supabaseEnabled) {
-            if (supabaseUrl == null || supabaseUrl.isBlank()) {
-                throw new IllegalStateException(
-                        "[Railway] supabase.url 이 비어 있습니다. 환경변수 SUPABASE_URL 을 설정하세요.");
-            }
-            if (supabaseKey == null || supabaseKey.isBlank()) {
-                throw new IllegalStateException(
-                        "[Railway] supabase.key 가 비어 있습니다. 환경변수 SUPABASE_ANON_KEY 를 설정하세요.");
-            }
-        }
-
-        // 5. OAuth2 클라이언트 — 미설정이면 소셜 로그인 전부 불가
+        // 4. OAuth2 클라이언트 — 미설정이면 소셜 로그인 전부 불가
         if (kakaoClientId == null || kakaoClientId.isBlank()) {
             throw new IllegalStateException(
                     "[Railway] 카카오 OAuth2 클라이언트가 비어 있습니다. "
@@ -119,7 +97,7 @@ public class RailwayDeploymentValidator {
                             + "환경변수 APP_BASE_URL 을 공개 도메인(예: https://<service>.up.railway.app)으로 설정하세요.");
         }
 
-        log.info("[Railway] 배포 환경 검증 통과 - prod 프로파일, MySQL 데이터소스, JWT/Supabase/OAuth2/APP_BASE_URL 설정 확인 완료");
+        log.info("[Railway] 배포 환경 검증 통과 - prod 프로파일, MySQL 데이터소스, JWT/OAuth2/APP_BASE_URL 설정 확인 완료");
     }
 
     /** 비밀번호가 URL 에 포함될 수 있으므로 호스트 부분만 로그에 남긴다 */

@@ -55,13 +55,6 @@ app:
   cookie:
     secure: true
 
-# Supabase Storage (운영: 활성화 → SupabaseFileStorage 사용)
-supabase:
-  url: ${SUPABASE_URL}
-  key: ${SUPABASE_ANON_KEY}
-  bucket: uploads
-  enabled: true
-
 management:
   endpoints:
     web:
@@ -71,6 +64,4 @@ management:
     health:
       show-details: when_authorized
 
-# 파일 업로드 경로 (운영)
-file:
-  upload-dir: /app/uploads
+# (파일은 DB(stored_files)에 저장 — 디스크 업로드 경로/외부 스토리지 불필요)

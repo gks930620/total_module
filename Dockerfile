@@ -78,14 +78,6 @@ if [ -n "${SPRING_PROFILES_ACTIVE:-}" ]; then
   SPRING_PROFILES_ACTIVE="$(sanitize_quoted "$SPRING_PROFILES_ACTIVE")"
   export SPRING_PROFILES_ACTIVE
 fi
-if [ -n "${SUPABASE_URL:-}" ]; then
-  SUPABASE_URL="$(sanitize_quoted "$SUPABASE_URL")"
-  export SUPABASE_URL
-fi
-if [ -n "${SUPABASE_KEY:-}" ]; then
-  SUPABASE_KEY="$(sanitize_quoted "$SUPABASE_KEY")"
-  export SUPABASE_KEY
-fi
 
 # [새 모듈 추가 시] 허용 목록에 모듈명 추가 (예: businesscard_qr|project_a)
 case "$APP_MODULE" in
