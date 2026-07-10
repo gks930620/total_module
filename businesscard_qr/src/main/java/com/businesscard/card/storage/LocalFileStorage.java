@@ -10,9 +10,9 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 로컬 디스크 기반 스토리지 (개발용).
+ * 로컬 디스크 기반 스토리지 (개발용/폴백).
  *
- * <p>{@code app.storage.type=local} 일 때 사용된다. 운영 기본 구현은 {@code DbFileStorage}이며,
+ * <p>{@code app.bucket.endpoint}가 비어있을 때 사용된다. 운영 기본 구현은 {@code BucketFileStorage}이며,
  * 이 구현은 논리 경로 {@code /uploads/...} 를 업로드 디렉터리 하위 물리 경로로 매핑한다.
  */
 @Slf4j

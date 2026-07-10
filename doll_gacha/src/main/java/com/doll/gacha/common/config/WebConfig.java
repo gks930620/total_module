@@ -14,8 +14,8 @@ import java.util.List;
 @Slf4j
 public class WebConfig implements WebMvcConfigurer {
 
-    // 업로드 파일은 디스크가 아니라 DB(stored_files)에 저장하고
-    // FileController 의 GET /uploads/{storedFileName} 가 서빙한다 → 정적 리소스 핸들러 불필요.
+    // 업로드 파일은 스토리지 전략(Storage Bucket S3 / 로컬 디스크 폴백)에 저장하고
+    // FileController 의 GET /uploads/{storedFileName} 가 읽어서 서빙한다 → 정적 리소스 핸들러 불필요.
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {

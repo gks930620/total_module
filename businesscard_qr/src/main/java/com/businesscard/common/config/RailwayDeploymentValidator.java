@@ -23,6 +23,18 @@ public class RailwayDeploymentValidator {
     @Value("${app.public-base-url:}")
     private String publicBaseUrl;
 
+    @Value("${app.bucket.endpoint:}")
+    private String bucketEndpoint;
+
+    @Value("${app.bucket.name:}")
+    private String bucketName;
+
+    @Value("${app.bucket.access-key:}")
+    private String bucketAccessKey;
+
+    @Value("${app.bucket.secret-key:}")
+    private String bucketSecretKey;
+
     @PostConstruct
     void validate() {
         if (railwayProjectId == null || railwayProjectId.isBlank()) {
@@ -41,6 +53,23 @@ public class RailwayDeploymentValidator {
             throw new IllegalStateException(
                     "Railway 배포에서는 SPRING_DATASOURCE_URL을 Railway MySQL/MariaDB URL로 설정해야 합니다. "
                             + "인메모리 H2로 부팅하면 재배포 시 모든 데이터가 삭제됩니다."
+            );
+        }
+
+        // Railway에서는 컨테이너 로컬 디스크가 재배포 시 초기화되므로 반드시 오브젝트 스토리지(Railway Bucket)를 연결해야 한다.
+        if (bucketEndpoint == null || bucketEndpoint.isBlank()) {
+            throw new IllegalStateException(
+                    "Railway Bucket 미연결 — BUCKET_ENDPOINT/BUCKET_ACCESS_KEY_ID/BUCKET_SECRET_ACCESS_KEY/BUCKET_NAME 을 서비스에 연결하라. "
+                            + "로컬 디스크로 부팅하면 재배포 시 업로드 파일이 모두 삭제됩니다."
+            );
+        }
+
+        if ((bucketName == null || bucketName.isBlank())
+                || (bucketAccessKey == null || bucketAccessKey.isBlank())
+                || (bucketSecretKey == null || bucketSecretKey.isBlank())) {
+            throw new IllegalStateException(
+                    "Railway Bucket 설정 불완전 — BUCKET_ENDPOINT 가 설정되었으나 "
+                            + "BUCKET_NAME/BUCKET_ACCESS_KEY_ID/BUCKET_SECRET_ACCESS_KEY 중 일부가 비어있습니다."
             );
         }
 

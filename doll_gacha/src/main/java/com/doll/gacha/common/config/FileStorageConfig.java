@@ -1,6 +1,8 @@
-package com.businesscard.card.storage;
+package com.doll.gacha.common.config;
 
-import java.net.URI;
+import com.doll.gacha.file.strategy.BucketFileStorage;
+import com.doll.gacha.file.strategy.FileStorageStrategy;
+import com.doll.gacha.file.strategy.LocalDiskFileStorage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -10,20 +12,18 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
+import java.net.URI;
+
 /**
- * 파일 스토리지 구현 선택.
+ * 파일 저장 전략 빈 구성.
  *
- * <ul>
- *   <li>{@code app.bucket.endpoint}(env {@code BUCKET_ENDPOINT})가 비어있지 않으면
- *       → {@link BucketFileStorage} (Railway Buckets 등 S3 호환 오브젝트 스토리지, 재배포에도 보존)</li>
- *   <li>비어있으면 → {@link LocalFileStorage} (로컬 디스크, 개발 편의용/폴백)</li>
- * </ul>
- *
- * <p>{@code @ConditionalOnProperty} 대신 코드에서 {@code isBlank()}로 판정한다.
- * 빈 문자열 endpoint(기본값)는 로컬 디스크를 선택해야 하기 때문이다.
+ * <p>선택 규칙: app.bucket.endpoint(BUCKET_ENDPOINT)가 비어있지 않으면
+ * Railway Storage Bucket(S3 호환) → {@link BucketFileStorage},
+ * 비어있으면 로컬 디스크 → {@link LocalDiskFileStorage}.
+ * FileStorageStrategy 빈은 이 클래스에서 유일하게 생성된다(구현체에는 @Component 없음).
  */
-@Slf4j
 @Configuration
+@Slf4j
 public class FileStorageConfig {
 
     @Value("${app.bucket.endpoint:}")
@@ -45,20 +45,21 @@ public class FileStorageConfig {
     private String uploadDir;
 
     @Bean
-    public FileStorage fileStorage() {
+    public FileStorageStrategy fileStorageStrategy() {
         if (bucketEndpoint != null && !bucketEndpoint.isBlank()) {
-            log.info("FileStorage: S3 Bucket (endpoint={}, bucket={}, region={})",
+            log.info("[파일저장] Railway Storage Bucket(S3) 사용 - endpoint: {}, bucket: {}, region: {}",
                     bucketEndpoint, bucketName, bucketRegion);
-            S3Client s3 = S3Client.builder()
+            S3Client s3Client = S3Client.builder()
                     .endpointOverride(URI.create(bucketEndpoint))
                     .region(Region.of(bucketRegion))
                     .credentialsProvider(StaticCredentialsProvider.create(
                             AwsBasicCredentials.create(bucketAccessKey, bucketSecretKey)))
                     .forcePathStyle(true)
                     .build();
-            return new BucketFileStorage(s3, bucketName);
+            return new BucketFileStorage(s3Client, bucketName);
         }
-        log.info("FileStorage: Local disk (dir={})", uploadDir);
-        return new LocalFileStorage(uploadDir);
+
+        log.info("[파일저장] 로컬 디스크 폴백 사용 - upload-dir: {}", uploadDir);
+        return new LocalDiskFileStorage(uploadDir);
     }
 }

@@ -64,3 +64,10 @@ jwt:
 app:
   cookie:
     secure: false
+  # 버킷 endpoint 미설정 → 파일 저장은 로컬 디스크 폴백 사용 (테스트에서 네트워크/S3 불필요)
+  bucket:
+    endpoint:
+
+# 테스트 업로드 파일은 build 하위에 격리 (커밋/작업 트리 오염 방지)
+file:
+  upload-dir: ./build/test-uploads

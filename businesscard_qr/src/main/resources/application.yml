@@ -51,10 +51,14 @@ app:
   # QR/이미지 등 절대 URL 생성 시 사용할 공개 베이스 URL(예: https://gateway.example.com).
   # 비워두면 X-Forwarded 헤더 기반(fromCurrentContextPath)으로 추론한다.
   public-base-url: ${APP_PUBLIC_BASE_URL:}
-  storage:
-    # db: Railway MySQL에 이미지 저장(운영 기본, 재배포에도 보존)
-    # local: 로컬 디스크(개발 편의용)
-    type: ${APP_STORAGE_TYPE:db}
+  bucket:
+    # endpoint가 비어있지 않으면 S3 호환 오브젝트 스토리지(Railway Buckets)에 저장(운영, 재배포에도 보존).
+    # 비어있으면 로컬 디스크(file.upload-dir)로 폴백한다(개발 편의용).
+    endpoint: ${BUCKET_ENDPOINT:}
+    access-key: ${BUCKET_ACCESS_KEY_ID:}
+    secret-key: ${BUCKET_SECRET_ACCESS_KEY:}
+    name: ${BUCKET_NAME:}
+    region: ${BUCKET_REGION:us-east-1}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:8080}
   jwt:

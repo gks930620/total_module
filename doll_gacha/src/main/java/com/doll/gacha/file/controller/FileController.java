@@ -1,13 +1,11 @@
 package com.doll.gacha.file.controller;
 
 import com.doll.gacha.common.dto.ApiResponse;
-import com.doll.gacha.common.exception.EntityNotFoundException;
 import com.doll.gacha.file.dto.FileDetailDTO;
 import com.doll.gacha.file.entity.FileEntity;
-import com.doll.gacha.file.entity.StoredFileEntity;
-import com.doll.gacha.file.repository.StoredFileRepository;
 import com.doll.gacha.file.service.FileService;
 import com.doll.gacha.file.strategy.FileStorageStrategy.FileUploadResult;
+import com.doll.gacha.file.strategy.FileStorageStrategy.LoadedFile;
 import com.doll.gacha.file.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,21 +26,20 @@ import java.util.List;
 public class FileController {
     private final FileService fileService;
     private final FileUtil fileUtil;
-    private final StoredFileRepository storedFileRepository;
 
     /**
      * 업로드 이미지 인라인 서빙 (HTML img 태그에서 호출).
-     * DB(stored_files)에 저장된 바이트를 스트리밍한다. 저장 백엔드가 DB라 배포/재시작에 무관하게 동작.
+     * 저장 전략(버킷 S3 / 로컬 디스크)에서 바이트를 읽어 스트리밍한다.
      * (경로 계약: DollShop/파일 메타의 imagePath = /uploads/{storedFileName})
      */
     @GetMapping("/uploads/{storedFileName:.+}")
     public ResponseEntity<byte[]> serveUpload(@PathVariable String storedFileName) {
-        return storedFileRepository.findById(storedFileName)
+        return fileUtil.load(storedFileName)
                 .map(this::toInlineResponse)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    private ResponseEntity<byte[]> toInlineResponse(StoredFileEntity file) {
+    private ResponseEntity<byte[]> toInlineResponse(LoadedFile file) {
         MediaType mediaType = (file.getContentType() == null || file.getContentType().isBlank())
                 ? MediaType.APPLICATION_OCTET_STREAM
                 : MediaType.parseMediaType(file.getContentType());
@@ -82,7 +79,7 @@ public class FileController {
             @RequestParam FileEntity.RefType refType,
             @RequestParam FileEntity.Usage usage) {
 
-        // 1. FileUtil로 파일 바이트를 DB에 저장
+        // 1. FileUtil로 파일 바이트를 스토리지(버킷/디스크)에 저장
         List<FileUploadResult> uploadResults = files.stream()
                 .filter(file -> !file.isEmpty())
                 .map(fileUtil::saveFile)
@@ -90,7 +87,7 @@ public class FileController {
 
         log.info("파일 저장 완료 - 파일 수: {}", uploadResults.size());
 
-        // 2. FileService로 DB에 파일 메타 정보 저장
+        // 2. FileService로 파일 메타 정보(files 테이블) 저장
         List<String> savedPaths = fileService.saveFiles(uploadResults, refId, refType, usage);
 
         log.info("파일 업로드 완료 - refId: {}, refType: {}, 파일 수: {}", refId, refType, savedPaths.size());
@@ -114,7 +111,7 @@ public class FileController {
 
     /**
      * 첨부파일 다운로드 API (원본 파일명으로 저장되게 응답).
-     * DB(stored_files)에서 바이트를 읽어 attachment 로 내려준다.
+     * 저장 전략(버킷 S3 / 로컬 디스크)에서 바이트를 읽어 attachment 로 내려준다.
      * @param fileId 파일 메타 ID
      */
     @GetMapping("/api/files/download/{fileId}")
@@ -122,9 +119,11 @@ public class FileController {
         // 1. 파일 메타 조회 (없으면 EntityNotFoundException → GlobalExceptionHandler 404)
         FileEntity fileEntity = fileService.getFileById(fileId);
 
-        // 2. 저장 파일명으로 DB 바이트 조회
-        StoredFileEntity stored = storedFileRepository.findById(fileEntity.getStoredFileName())
-                .orElseThrow(() -> EntityNotFoundException.of("파일", fileEntity.getStoredFileName()));
+        // 2. 저장 파일명으로 스토리지 바이트 조회 (없으면 404)
+        LoadedFile loaded = fileUtil.load(fileEntity.getStoredFileName()).orElse(null);
+        if (loaded == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         // 3. 원본 파일명 인코딩 (한글 파일명 지원)
         String encodedFileName = URLEncoder.encode(fileEntity.getOriginalFileName(), StandardCharsets.UTF_8)
@@ -133,7 +132,7 @@ public class FileController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"")
-                .body(stored.getData());
+                .body(loaded.getData());
     }
 
     /**

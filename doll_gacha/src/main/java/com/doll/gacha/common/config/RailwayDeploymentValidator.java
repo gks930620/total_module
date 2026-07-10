@@ -38,6 +38,18 @@ public class RailwayDeploymentValidator {
     @Value("${APP_BASE_URL:}")
     private String appBaseUrl;
 
+    @Value("${app.bucket.endpoint:}")
+    private String bucketEndpoint;
+
+    @Value("${app.bucket.access-key:}")
+    private String bucketAccessKey;
+
+    @Value("${app.bucket.secret-key:}")
+    private String bucketSecretKey;
+
+    @Value("${app.bucket.name:}")
+    private String bucketName;
+
     @PostConstruct
     void validate() {
         if (railwayProjectId == null || railwayProjectId.isBlank()) {
@@ -97,7 +109,23 @@ public class RailwayDeploymentValidator {
                             + "환경변수 APP_BASE_URL 을 공개 도메인(예: https://<service>.up.railway.app)으로 설정하세요.");
         }
 
-        log.info("[Railway] 배포 환경 검증 통과 - prod 프로파일, MySQL 데이터소스, JWT/OAuth2/APP_BASE_URL 설정 확인 완료");
+        // 7. 파일 스토리지(Railway Storage Bucket, S3 호환) — 컨테이너 디스크는 휘발성이므로
+        //    운영에서는 반드시 버킷을 써야 업로드 파일이 재배포 후에도 보존된다
+        if (bucketEndpoint == null || bucketEndpoint.isBlank()) {
+            throw new IllegalStateException(
+                    "[Railway] 파일 스토리지 버킷 endpoint 가 비어 있습니다. "
+                            + "컨테이너 디스크는 재배포 시 초기화되므로 Railway Storage Bucket 연결이 필요합니다. "
+                            + "환경변수 BUCKET_ENDPOINT / BUCKET_ACCESS_KEY_ID / BUCKET_SECRET_ACCESS_KEY / BUCKET_NAME 을 설정하세요.");
+        }
+        if (bucketName == null || bucketName.isBlank()
+                || bucketAccessKey == null || bucketAccessKey.isBlank()
+                || bucketSecretKey == null || bucketSecretKey.isBlank()) {
+            throw new IllegalStateException(
+                    "[Railway] 파일 스토리지 버킷 endpoint 는 설정되었으나 이름/자격증명이 비어 있습니다. "
+                            + "환경변수 BUCKET_NAME / BUCKET_ACCESS_KEY_ID / BUCKET_SECRET_ACCESS_KEY 를 설정하세요.");
+        }
+
+        log.info("[Railway] 배포 환경 검증 통과 - prod 프로파일, MySQL 데이터소스, JWT/OAuth2/APP_BASE_URL, 스토리지 버킷 설정 확인 완료");
     }
 
     /** 비밀번호가 URL 에 포함될 수 있으므로 호스트 부분만 로그에 남긴다 */

@@ -29,6 +29,18 @@
 
 ---
 
+## 1.5. 파일 저장용 Storage Bucket 생성 (이미지/첨부)
+
+> 업로드 이미지·첨부는 **Railway Storage Bucket**(S3 호환 object storage)에 저장한다.
+> 컨테이너 디스크는 재배포 시 사라지므로, 파일은 반드시 버킷에 둔다. (DB에 안 넣음)
+
+1. Railway 프로젝트 캔버스 → `+ New` → `Bucket` (Storage Bucket)
+2. 버킷의 **Credentials/Variables** 에 `BUCKET_ENDPOINT / BUCKET_ACCESS_KEY_ID / BUCKET_SECRET_ACCESS_KEY / BUCKET_NAME` 자동 생성 확인
+3. 이 값들을 §3에서 doll_gacha 서비스에 연결한다(참조 변수 또는 직접 입력).
+   > private 버킷이라 공개 URL은 없다. 앱이 `GET /uploads/{키}` 로 프록시 서빙하므로 별도 설정 불필요.
+
+---
+
 ## 2. doll_gacha 서비스 생성
 
 1. `+ New` → `Service` → `GitHub Repo` → `gks930620/total_module` 선택
@@ -66,12 +78,18 @@ GOOGLE_CLIENT_ID=<구글 클라이언트 ID>
 GOOGLE_CLIENT_SECRET=<구글 시크릿>
 
 APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
+
+# 파일 저장용 Storage Bucket (§1.5에서 만든 버킷 값 — ${{버킷서비스명.XXX}} 참조로 연결 권장)
+BUCKET_ENDPOINT=${{<버킷서비스명>.BUCKET_ENDPOINT}}
+BUCKET_ACCESS_KEY_ID=${{<버킷서비스명>.BUCKET_ACCESS_KEY_ID}}
+BUCKET_SECRET_ACCESS_KEY=${{<버킷서비스명>.BUCKET_SECRET_ACCESS_KEY}}
+BUCKET_NAME=${{<버킷서비스명>.BUCKET_NAME}}
 ```
 
-> 📌 **파일(이미지) 저장은 DB(MySQL LONGBLOB)** 를 쓴다 — Supabase 등 외부 스토리지를 쓰지 않으므로
-> `SUPABASE_*` 같은 환경변수는 **필요 없다**. 업로드 이미지는 `stored_files` 테이블에 저장되어 재배포에도 보존된다.
+> 📌 **파일(이미지) 저장은 Railway Storage Bucket(S3 호환)** 을 쓴다. 이미지는 버킷에 저장되어 재배포에도 보존된다.
+> `<버킷서비스명>`은 §1.5에서 만든 버킷의 서비스명(자동완성으로 넣는 게 안전). private 버킷이라 앱이 `/uploads/{키}`로 프록시 서빙.
 >
-> ⚠️ 필수값(`SPRING_DATASOURCE_*`, `JWT_SECRET_KEY`, OAuth, `SPRING_PROFILES_ACTIVE=prod`, `APP_BASE_URL`)이
+> ⚠️ 필수값(`SPRING_DATASOURCE_*`, `JWT_SECRET_KEY`, OAuth, `SPRING_PROFILES_ACTIVE=prod`, `APP_BASE_URL`, `BUCKET_*`)이
 > 빠지거나 `APP_BASE_URL`이 localhost면 **부팅이 실패**한다 (RailwayDeploymentValidator fail-fast). 실패는 정상 동작 —
 > 로그에 어떤 값이 빠졌는지 한글로 나온다.
 > `${{...}}` 입력은 입력창에서 `${{` 치고 자동완성으로 넣는 게 안전.
@@ -139,7 +157,7 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
       (적재 전이면 비어 있는 게 정상)
 - [ ] **카카오 로그인**: 로그인 → 카카오 동의 → `<도메인>`으로 리다이렉트되어 로그인 완료되는지
 - [ ] **구글 로그인**: 위와 동일
-- [ ] **이미지 업로드**: 리뷰/게시글에 이미지 첨부 → 표시되는지, **재배포 후에도 보존**되는지 (DB `stored_files` 저장)
+- [ ] **이미지 업로드**: 리뷰/게시글에 이미지 첨부 → 표시되는지, **재배포 후에도 보존**되는지 (Storage Bucket 저장)
 - [ ] **(지도)** 지도 페이지에서 카카오 지도가 뜨는지 (안 뜨면 4단계 지도 도메인 등록 확인)
 
 ---
@@ -151,7 +169,7 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
 | 부팅 실패(서비스 죽음) | 로그의 한글 fail-fast 메시지 — 빠진 env 확인 (§3) |
 | 화면은 뜨는데 JS/CSS 404 | 빌드 로그에서 프론트 static 포함 여부 (이론상 해결됨) |
 | 로그인 눌러도 에러/리다이렉트 실패 | 카카오·구글 콘솔의 Redirect URI가 `<도메인>`과 정확히 일치하는지 (§4) |
-| 이미지 업로드/표시 실패 | DB 연결(§3) 확인 — 이미지는 `stored_files` 테이블에 저장됨 |
+| 이미지 업로드/표시 실패 | `BUCKET_*` 4개 연결(§1.5·§3) 확인 — 이미지는 Storage Bucket에 저장·서빙됨 |
 | 맵/매장 목록이 비어있음 | `data-dollshop.sql` 미적재 — §5.5대로 1회 적재 |
 | 매장 목록의 한글이 깨짐 | §5.5 적재를 **UTF-8**로 다시 (`--default-character-set=utf8mb4`) |
 

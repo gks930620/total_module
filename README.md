@@ -27,7 +27,7 @@
 - `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD` — **필수.** 없으면 부팅 실패(fail-fast, H2 인메모리 데이터 소실 방지)
 - `APP_JWT_SECRET` (32+ chars) — 기본값이면 배포 차단
 - `APP_PUBLIC_BASE_URL=https://<이 서비스의 공개 도메인>` — QR/이미지/다운로드 절대 URL 기준
-- `APP_STORAGE_TYPE=db` (기본) — 업로드 이미지를 MySQL에 저장(재배포에도 보존)
+- `BUCKET_ENDPOINT` / `BUCKET_ACCESS_KEY_ID` / `BUCKET_SECRET_ACCESS_KEY` / `BUCKET_NAME` — 업로드 이미지를 Railway Storage Bucket(S3)에 저장(재배포에도 보존). 미설정 시 로컬 디스크 폴백
 - 헬스체크: `GET /healthz` (railway.toml)
 
 ## 새 모듈 추가 절차

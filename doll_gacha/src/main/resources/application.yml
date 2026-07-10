@@ -110,6 +110,19 @@ app:
   oauth2:
     # 앱(target=app) OAuth2 완료 후 토큰 전달 리다이렉트 베이스 (로컬: Android 에뮬레이터)
     app-redirect-base: ${APP_OAUTH2_REDIRECT_BASE:http://10.0.2.2:8080}
+  # ----- 파일 저장: Railway Storage Bucket(S3 호환) -----
+  #  endpoint 가 비어있으면(로컬 기본값) 디스크 폴백(file.upload-dir) 사용,
+  #  BUCKET_ENDPOINT 가 설정되면(운영) S3 버킷 사용.
+  bucket:
+    endpoint: ${BUCKET_ENDPOINT:}
+    access-key: ${BUCKET_ACCESS_KEY_ID:}
+    secret-key: ${BUCKET_SECRET_ACCESS_KEY:}
+    name: ${BUCKET_NAME:}
+    region: ${BUCKET_REGION:us-east-1}
+
+# 파일 저장 경로 (버킷 미사용 시 로컬 디스크 폴백 위치)
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:./uploads}
 
 # Actuator
 management:
@@ -130,4 +143,4 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# (파일은 DB(stored_files)에 저장 — 디스크 업로드 경로 불필요)
+# (파일 저장: 운영은 Railway Storage Bucket(S3), 로컬은 디스크 폴백 — app.bucket / file.upload-dir 참고)

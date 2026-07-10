@@ -98,7 +98,7 @@ public class FileService {
         FileEntity fileEntity = fileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다: " + fileId));
 
-        // 메타데이터 + 실제 바이트(stored_files) 함께 삭제 (orphan LONGBLOB 방지)
+        // 메타데이터 + 실제 바이트(버킷/디스크) 함께 삭제 (orphan 파일 방지)
         fileUtil.deleteFile(fileEntity.getFilePath());
         fileRepository.delete(fileEntity);
         log.info("파일 삭제 완료 - fileId: {}, 파일명: {}", fileId, fileEntity.getOriginalFileName());

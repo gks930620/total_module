@@ -64,4 +64,5 @@ management:
     health:
       show-details: when_authorized
 
-# (파일은 DB(stored_files)에 저장 — 디스크 업로드 경로/외부 스토리지 불필요)
+# (파일 저장: Railway Storage Bucket(S3). BUCKET_ENDPOINT/BUCKET_ACCESS_KEY_ID/
+#  BUCKET_SECRET_ACCESS_KEY/BUCKET_NAME 환경변수로 주입 — app.bucket 은 base application.yml 에 정의)

@@ -18,7 +18,6 @@ import com.businesscard.auth.service.AuthService;
 import com.businesscard.card.entity.BusinessCardEntity;
 import com.businesscard.card.repository.BusinessCardRepository;
 import com.businesscard.card.storage.FileStorage;
-import com.businesscard.card.storage.StoredFileRepository;
 import com.businesscard.common.security.JwtTokenProvider;
 import com.businesscard.user.entity.UserEntity;
 import com.businesscard.user.repository.UserRepository;
@@ -73,9 +72,6 @@ class ApiIntegrationTest {
     @Autowired
     private FileStorage fileStorage;
 
-    @Autowired
-    private StoredFileRepository storedFileRepository;
-
     @MockBean
     private AuthService authService;
 
@@ -88,7 +84,6 @@ class ApiIntegrationTest {
         cleanUploadDirectory();
         businessCardRepository.deleteAll();
         userRepository.deleteAll();
-        storedFileRepository.deleteAll();
 
         userRepository.save(UserEntity.builder()
                 .id(TEST_USER_ID)
@@ -454,7 +449,7 @@ class ApiIntegrationTest {
     }
 
     private String createImageFile(String fileName, byte[] bytes) {
-        // 운영 기본 저장소(DB)를 그대로 사용해 저장 → 다운로드 경로를 검증한다.
+        // 설정된 FileStorage(테스트에서는 로컬 디스크 폴백)에 저장 → 다운로드 경로를 검증한다.
         return fileStorage.store("business-card-images/" + fileName, bytes, "image/png");
     }
 
