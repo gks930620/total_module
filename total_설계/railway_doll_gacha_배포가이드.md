@@ -93,6 +93,29 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
 1. 위 설정 후 `doll_gacha` 서비스가 자동 배포됨. 안 되면 `Deployments` 탭 → `Redeploy`
 2. 빌드 로그에서 `BUILD SUCCESSFUL` + 앱 기동 로그 확인
    - 참고: 첫 빌드는 gradle + 프론트(static 포함) 빌드라 몇 분 걸릴 수 있음
+   - 첫 기동 시 `ddl-auto: update`가 **빈 테이블을 생성**한다(운영은 시드를 자동 실행하지 않음 → §5.5).
+
+---
+
+## 5.5. ⚠️ 가게(인형뽑기) 데이터 수동 적재 — **안 하면 맵/목록이 빈 채로 뜬다**
+
+운영(prod)은 `spring.sql.init.mode: never`라 시드 `.sql`을 **자동 실행하지 않는다.** 이유:
+- `data-users/community/review/comment/files.sql`은 **데모/개발용 가짜 데이터**이고,
+  특히 `data-files.sql`은 `C:/workspace/...` 로컬 경로가 박혀 있어 운영에 넣으면 안 된다.
+- 따라서 운영에 넣을 것은 **실제 가게 참조 데이터인 `data-dollshop.sql` 하나뿐**이다. (나머지는 실제 사용자가 로그인/작성하며 채워짐)
+
+### 적재 방법 (최초 1회)
+1. **앱을 먼저 한 번 배포**해서 테이블이 생성된 상태로 만든다(위 §5).
+2. Railway `mysql-doll` 서비스 → `Variables`/`Connect` 에서 **공개 접속 정보**(host, port, user, password, db)를 확인한다.
+3. 로컬에서 **UTF-8로** `data-dollshop.sql`을 적재한다 (⚠️ 인코딩 주의 — 안 그러면 로컬에서 겪은 한글 깨짐이 운영에서 재발):
+   ```bash
+   mysql --default-character-set=utf8mb4 -h <host> -P <port> -u <user> -p<password> <db> \
+     < doll_gacha/src/main/resources/data-dollshop.sql
+   ```
+   - GUI(DBeaver/Workbench)로 열어 실행해도 됨 — **인코딩을 UTF-8로** 지정할 것.
+4. 적재 후 `SELECT count(*), gubun1 FROM doll_shop GROUP BY gubun1;` 로 한글이 안 깨졌는지 확인.
+
+> 이 데이터는 Railway MySQL 볼륨에 **영속**되므로 재배포해도 유지된다(1회만 적재하면 됨).
 
 ---
 
@@ -100,8 +123,8 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
 
 - [ ] **헬스체크**: `https://<도메인>/healthz` → `{"service":"doll_gacha","status":"UP"}`
 - [ ] **화면 로드**: `https://<도메인>/` 접속 → React 화면이 뜨고 **JS/CSS 404가 없는지**(브라우저 개발자도구 Network 탭). ← 편입 시 잡은 핵심 포인트
-- [ ] **DB 연결**: 인형샵 목록/커뮤니티 페이지가 에러 없이 열리는지
-      (⚠️ prod는 시드 SQL이 안 돌아 **DB가 비어 있음** → 인형샵 데이터는 수동 적재 필요. 빈 목록이 정상일 수 있음)
+- [ ] **가게 데이터/맵**: `data-dollshop.sql` 적재(§5.5) 후 `/map`·매장 목록에 가게가 뜨고 **한글이 안 깨지는지**
+      (적재 전이면 비어 있는 게 정상)
 - [ ] **카카오 로그인**: 로그인 → 카카오 동의 → `<도메인>`으로 리다이렉트되어 로그인 완료되는지
 - [ ] **구글 로그인**: 위와 동일
 - [ ] **이미지 업로드**: 리뷰/게시글에 이미지 첨부 → Supabase에 저장되고 표시되는지, **재배포 후에도 보존**되는지
@@ -117,7 +140,8 @@ APP_BASE_URL=https://<2단계에서 생성한 doll_gacha 도메인>
 | 화면은 뜨는데 JS/CSS 404 | 빌드 로그에서 프론트 static 포함 여부 (이론상 해결됨) |
 | 로그인 눌러도 에러/리다이렉트 실패 | 카카오·구글 콘솔의 Redirect URI가 `<도메인>`과 정확히 일치하는지 (§4) |
 | 이미지 업로드 실패 | `SUPABASE_URL`/`SUPABASE_ANON_KEY` + Supabase 버킷 권한 |
-| 목록이 비어있음 | 정상일 수 있음 — prod는 시드 미실행. 데이터 수동 적재 |
+| 맵/매장 목록이 비어있음 | `data-dollshop.sql` 미적재 — §5.5대로 1회 적재 |
+| 매장 목록의 한글이 깨짐 | §5.5 적재를 **UTF-8**로 다시 (`--default-character-set=utf8mb4`) |
 
 ---
 

@@ -62,6 +62,8 @@ APP_PUBLIC_BASE_URL=https://<4에서 생성한 자기 도메인>
 
 ## 5. 새 모듈(프로젝트 A) 추가 시
 
+> 이미 편입된 **doll_gacha**의 서비스 생성·env·시드 적재 상세는 [`railway_doll_gacha_배포가이드.md`](railway_doll_gacha_배포가이드.md) 참고.
+
 코드 쪽 절차는 [`아키텍처_방향결정.md`](아키텍처_방향결정.md) §3. Railway 쪽은 위 §3을 새 모듈명으로 반복하면 끝
 (DB가 필요하면 §2처럼 DB 서비스 추가 또는 기존 mysql 공유).
 
