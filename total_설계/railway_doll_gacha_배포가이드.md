@@ -34,7 +34,7 @@
 > 업로드 이미지·첨부는 **Railway Storage Bucket**(S3 호환 object storage)에 저장한다.
 > 컨테이너 디스크는 재배포 시 사라지므로, 파일은 반드시 버킷에 둔다. (DB에 안 넣음)
 
-1. Railway 프로젝트 캔버스 → `+ New` → `Bucket` (Storage Bucket)
+1. Railway 프로젝트 캔버스 → `+ New` → `Bucket` (Storage Bucket) — 이름은 `doll_gacha_bucket` (**규칙: `<프로젝트명>_bucket`**, 프로젝트별 1개)
 2. 버킷의 **Credentials/Variables** 에 `BUCKET_ENDPOINT / BUCKET_ACCESS_KEY_ID / BUCKET_SECRET_ACCESS_KEY / BUCKET_NAME` 자동 생성 확인
 3. 이 값들을 §3에서 doll_gacha 서비스에 연결한다(참조 변수 또는 직접 입력).
    > private 버킷이라 공개 URL은 없다. 앱이 `GET /uploads/{키}` 로 프록시 서빙하므로 별도 설정 불필요.
