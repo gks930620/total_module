@@ -23,6 +23,9 @@ public class RailwayDeploymentValidator {
     @Value("${app.public-base-url:}")
     private String publicBaseUrl;
 
+    @Value("${app.kakao.expected-app-id:}")
+    private String kakaoExpectedAppId;
+
     @Value("${app.bucket.endpoint:}")
     private String bucketEndpoint;
 
@@ -70,6 +73,17 @@ public class RailwayDeploymentValidator {
             throw new IllegalStateException(
                     "Railway Bucket 설정 불완전 — BUCKET_ENDPOINT 가 설정되었으나 "
                             + "BUCKET_NAME/BUCKET_ACCESS_KEY_ID/BUCKET_SECRET_ACCESS_KEY 중 일부가 비어있습니다."
+            );
+        }
+
+        // 카카오 토큰의 "발급 앱" 검증. 이 값이 비어 있으면 AuthService 가 app_id 검증을 건너뛰어,
+        // 다른 카카오 앱이 발급한 액세스 토큰으로도 로그인이 통과한다(access token audience confusion).
+        // 카카오 회원번호는 앱별로 부여되므로 id 공간이 겹치면 기존 계정으로 로그인될 수 있다 → 운영에서는 필수.
+        if (kakaoExpectedAppId == null || kakaoExpectedAppId.isBlank()) {
+            throw new IllegalStateException(
+                    "Railway 배포에서는 APP_KAKAO_EXPECTED_APP_ID 를 설정해야 합니다. "
+                            + "미설정 시 다른 카카오 앱이 발급한 액세스 토큰도 로그인에 통과해 인증 우회가 가능합니다. "
+                            + "카카오 개발자 콘솔의 앱 ID(숫자)를 설정하세요."
             );
         }
 

@@ -60,7 +60,14 @@ public class BusinessCardService {
         return toResponse(card);
     }
 
-    @Transactional
+    /**
+     * 명함 생성.
+     *
+     * <p>버킷 업로드(외부 네트워크 I/O)를 트랜잭션 안에서 하지 않는다 — 코드컨벤션 §1.
+     * 느린 버킷 호출이 DB 커넥션을 붙잡으면 커넥션 풀이 고갈된다. DB 저장은 명시적 save 라
+     * 별도 트랜잭션이 필요 없다. (저장 실패 시 업로드된 이미지는 orphan 으로 남지만,
+     * 데이터가 사라지는 것보다 안전하다)
+     */
     public BusinessCardIdResponse createBusinessCard(String userId, String payload, MultipartFile businessCardImage) {
         validateUserId(userId);
         BusinessCardUpsertRequest request = parseAndValidatePayload(payload);
@@ -72,7 +79,14 @@ public class BusinessCardService {
         return new BusinessCardIdResponse(entity.getId());
     }
 
-    @Transactional
+    /**
+     * 명함 수정.
+     *
+     * <p>① 버킷 I/O 는 트랜잭션 밖(코드컨벤션 §1). DB 갱신은 dirty checking 대신 <b>명시적 save</b>.
+     * <p>② 이미지 교체 시 <b>새 이미지를 먼저 저장하고, DB 갱신까지 성공한 뒤에</b> 옛 이미지를 지운다.
+     * 먼저 지우면(구 구현) 저장/갱신이 실패했을 때 DB 는 롤백돼 옛 경로를 가리키는데 파일은 이미
+     * 사라져서 <b>원본이 복구 불가능하게 유실</b>된다.
+     */
     public BusinessCardIdResponse updateBusinessCard(
             String userId,
             String cardId,
@@ -83,13 +97,19 @@ public class BusinessCardService {
         BusinessCardEntity card = getOwnedActiveCard(userId, cardId);
         BusinessCardUpsertRequest request = parseAndValidatePayload(payload);
 
-        String imagePath = card.getBusinessCardImagePath();
-        if (businessCardImage != null && !businessCardImage.isEmpty()) {
-            deleteImageIfExists(imagePath);
-            imagePath = storeImage(cardId, businessCardImage);
+        String oldImagePath = card.getBusinessCardImagePath();
+        String imagePath = oldImagePath;
+        boolean imageReplaced = businessCardImage != null && !businessCardImage.isEmpty();
+        if (imageReplaced) {
+            imagePath = storeImage(cardId, businessCardImage); // 새 이미지 먼저 저장
         }
 
         card.updateFrom(request, imagePath);
+        businessCardRepository.save(card);
+
+        if (imageReplaced) {
+            deleteImageIfExists(oldImagePath); // 성공한 뒤에야 옛 이미지 삭제
+        }
         return new BusinessCardIdResponse(card.getId());
     }
 
@@ -148,7 +168,7 @@ public class BusinessCardService {
         return new DownloadUrlResponse(url);
     }
 
-    @Transactional(readOnly = true)
+    /** vCard 다운로드. 버킷 GET(사진 로드)이 있어 트랜잭션을 걸지 않는다 — 코드컨벤션 §1. (읽기 전용이라 트랜잭션 불필요) */
     public DownloadFile downloadVcf(String cardId, String token) {
         BusinessCardEntity card = getActiveCard(cardId);
         if (!card.isVcfTokenValid(token)) {
@@ -163,7 +183,7 @@ public class BusinessCardService {
         return new DownloadFile(fileName, "text/vcard; charset=UTF-8", content);
     }
 
-    @Transactional(readOnly = true)
+    /** 이미지 다운로드. 버킷 GET 이 있어 트랜잭션을 걸지 않는다 — 코드컨벤션 §1. (읽기 전용이라 트랜잭션 불필요) */
     public DownloadFile downloadImage(String cardId, String token) {
         BusinessCardEntity card = getActiveCard(cardId);
         if (!card.isImageTokenValid(token)) {

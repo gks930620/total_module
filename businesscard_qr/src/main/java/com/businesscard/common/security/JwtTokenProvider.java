@@ -63,6 +63,20 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * 서명·만료가 유효하면서 typ 클레임이 access인 토큰인지 검증한다.
+     *
+     * <p>인증 필터는 반드시 이 메서드를 써야 한다. 서명·만료만 보는 {@link #isValid}로 통과시키면
+     * <b>refresh 토큰(수명 14일)을 access 토큰처럼 API 키로 사용</b>할 수 있어 짧은 access 수명 설계가 무력화된다.
+     */
+    public boolean isAccessToken(String token) {
+        try {
+            return TYPE_ACCESS.equals(parseClaims(token).get("typ", String.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     /** 서명·만료가 유효하면서 typ 클레임이 refresh인 토큰인지 검증한다. */
     public boolean isRefreshToken(String token) {
         try {

@@ -44,7 +44,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         String token = resolveToken(request);
-        if (token == null || !jwtTokenProvider.isValid(token)) {
+        // typ=access 만 인증에 사용한다. 서명·만료만 검사하면 refresh 토큰(14일)으로도
+        // 보호 API가 열려서 짧은 access 수명(1시간) 설계가 무력화된다.
+        if (token == null || !jwtTokenProvider.isAccessToken(token)) {
             filterChain.doFilter(request, response);
             return;
         }
