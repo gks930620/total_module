@@ -1,117 +1,78 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="800" viewBox="0 0 1320 800" font-family="Segoe UI, Malgun Gothic, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" font-family="Segoe UI, Malgun Gothic, 'Apple SD Gothic Neo', sans-serif">
   <defs>
-    <marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-      <path d="M0,0 L10,4 L0,8 z" fill="#444"/>
-    </marker>
-    <marker id="arrG" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-      <path d="M0,0 L10,4 L0,8 z" fill="#b8860b"/>
-    </marker>
+    <marker id="pf" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#8b94a3"/></marker>
   </defs>
+  <rect x="0" y="0" width="1200" height="720" fill="#ffffff"/>
 
-  <rect width="1320" height="800" fill="#ffffff"/>
+  <text x="40" y="46" font-size="23" font-weight="bold" fill="#1a1e26">total_module 저장소 구조 &amp; 빌드 흐름</text>
+  <text x="40" y="73" font-size="13.5" fill="#586475">폴더 하나에서 어떻게 서비스 여러 개가 나오나 — 단일 Dockerfile → 전 모듈 빌드 → 이미지 1개 → APP_MODULE로 실행 모듈 선택</text>
 
-  <!-- 제목 -->
-  <text x="40" y="44" font-size="23" font-weight="bold" fill="#1a1a2e">total_module 프로젝트 구조 — 스프링부트가 아니라 "Gradle 멀티모듈 루트 + 배포 껍데기"</text>
-  <text x="40" y="70" font-size="13.5" fill="#666">total_module 자체에는 실행 코드가 없다. ① 소속 모듈 선언 ② 공통 빌드 설정 ③ 배포 껍데기 — 이 세 가지가 전부. (2026-07-08: 게이트웨이 모듈 삭제됨)</text>
+  <!-- ═══ 좌: 폴더 트리 ═══ -->
+  <rect x="40" y="95" width="600" height="560" rx="12" fill="#fafbfc" stroke="#e2e6ec" stroke-width="1.5"/>
+  <text x="62" y="122" font-size="12.5" font-weight="bold" fill="#5c6675">저장소 폴더 구조</text>
 
-  <!-- ═══ total_module 컨테이너 ═══ -->
-  <rect x="50" y="95" width="800" height="660" rx="12" fill="#fafafa" stroke="#555" stroke-width="2"/>
-  <text x="72" y="126" font-size="16" font-weight="bold" fill="#1a1a2e">📁 total_module/</text>
-  <text x="250" y="126" font-size="12.5" fill="#888">— src/ 없음, main 클래스 없음 = 스프링부트 프로젝트 아님</text>
+  <g font-family="Consolas, 'D2Coding', 'Courier New', monospace" font-size="13.5">
+    <text x="62" y="156" fill="#586475">total_module/            <tspan fill="#8b94a3"># 상위 폴더(실행 코드 없음, 스프링부트 아님)</tspan></text>
+    <text x="62" y="182" fill="#586475">├─ Dockerfile            <tspan fill="#8b94a3"># 단일 조립 설계도 · start.sh 내장</tspan></text>
+    <text x="62" y="208" fill="#586475">├─ settings.gradle       <tspan fill="#8b94a3"># 모듈 명단 include</tspan></text>
+    <text x="62" y="234" fill="#586475">├─ railway.toml          <tspan fill="#8b94a3"># 헬스체크 /healthz</tspan></text>
+    <text x="62" y="260" fill="#c8ced8">│</text>
 
-  <!-- 루트 역할 파일들 -->
-  <rect x="80" y="145" width="230" height="86" rx="8" fill="#fff8e6" stroke="#b8860b" stroke-width="1.8"/>
-  <text x="195" y="169" font-size="13.5" font-weight="bold" fill="#7a5a00" text-anchor="middle">① settings.gradle</text>
-  <text x="195" y="192" font-size="11.5" fill="#555" text-anchor="middle">include 'businesscard_qr'</text>
-  <text x="195" y="214" font-size="11" fill="#888" text-anchor="middle">(새 모듈마다 한 줄 추가)</text>
+    <text x="62" y="288" fill="#586475">├─ <tspan fill="#4453c6" font-weight="bold">businesscard_qr/</tspan>   <tspan fill="#48505e">[Gradle 모듈]</tspan></text>
+    <text x="62" y="310" fill="#8b94a3">│      Spring Boot · 명함 QR API</text>
+    <text x="62" y="338" fill="#586475">├─ <tspan fill="#0d8a7b" font-weight="bold">doll_gacha/</tspan>        <tspan fill="#48505e">[Gradle 모듈]</tspan></text>
+    <text x="62" y="360" fill="#8b94a3">│      Spring Boot + React(정적 서빙)</text>
+    <text x="62" y="388" fill="#586475">├─ project_a/            <tspan fill="#8b94a3"># 향후 모듈…</tspan></text>
+    <text x="62" y="414" fill="#c8ced8">│</text>
 
-  <rect x="335" y="145" width="230" height="86" rx="8" fill="#fff8e6" stroke="#b8860b" stroke-width="1.8"/>
-  <text x="450" y="169" font-size="13.5" font-weight="bold" fill="#7a5a00" text-anchor="middle">② build.gradle + gradlew</text>
-  <text x="450" y="192" font-size="11.5" fill="#555" text-anchor="middle">공통 설정 (거의 비어있음)</text>
-  <text x="450" y="211" font-size="11.5" fill="#555" text-anchor="middle">저장소 지정, bootJarAll</text>
+    <text x="62" y="442" fill="#586475">├─ businesscard_qr_app/  <tspan fill="#9aa1ad">[비-모듈]</tspan></text>
+    <text x="62" y="464" fill="#8b94a3">│      Flutter 앱 (APK 별도 배포)</text>
+    <text x="62" y="492" fill="#586475">├─ total_설계/           <tspan fill="#9aa1ad">[문서]</tspan></text>
+    <text x="62" y="514" fill="#8b94a3">│      아키텍처·편입 / 배포·비용 / 코드컨벤션</text>
+    <text x="62" y="542" fill="#586475">└─ 클로드코드와응답/      <tspan fill="#9aa1ad">[기록]</tspan></text>
+  </g>
 
-  <rect x="590" y="145" width="235" height="86" rx="8" fill="#fff8e6" stroke="#b8860b" stroke-width="1.8"/>
-  <text x="707" y="169" font-size="13.5" font-weight="bold" fill="#7a5a00" text-anchor="middle">③ Dockerfile + railway.toml</text>
-  <text x="707" y="192" font-size="11.5" fill="#555" text-anchor="middle">모든 모듈 jar를 이미지 하나에 담고</text>
-  <text x="707" y="211" font-size="11.5" fill="#555" text-anchor="middle">APP_MODULE로 실행 jar 선택</text>
+  <text x="62" y="590" font-size="12" fill="#586475"><tspan fill="#48505e" font-weight="bold">[Gradle 모듈]</tspan> = 빌드·서비스 대상 (이미지에 jar 포함)</text>
+  <text x="62" y="612" font-size="12" fill="#586475"><tspan fill="#9aa1ad" font-weight="bold">[비-모듈]</tspan> = Flutter·문서 (Docker 이미지에 미포함)</text>
 
-  <!-- include 화살표 -->
-  <line x1="180" y1="231" x2="230" y2="315" stroke="#b8860b" stroke-width="2" marker-end="url(#arrG)"/>
-  <line x1="230" y1="228" x2="480" y2="318" stroke="#b8860b" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrG)"/>
-  <text x="120" y="285" font-size="12" font-weight="bold" fill="#b8860b">include (Gradle 서브프로젝트로 등록)</text>
+  <!-- ═══ 우: 빌드 → 실행 흐름 ═══ -->
+  <rect x="670" y="95" width="490" height="560" rx="12" fill="#fafbfc" stroke="#e2e6ec" stroke-width="1.5"/>
+  <text x="692" y="122" font-size="12.5" font-weight="bold" fill="#5c6675">빌드 → 실행 흐름</text>
 
-  <!-- Dockerfile → 모듈 화살표 -->
-  <line x1="740" y1="231" x2="360" y2="330" stroke="#444" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#arr)"/>
-  <text x="620" y="290" font-size="11.5" fill="#666">jar 빌드해서 포장</text>
+  <!-- 세로 레일 -->
+  <line x1="712" y1="160" x2="712" y2="560" stroke="#e2e6ec" stroke-width="1.5"/>
 
-  <!-- ═══ 스프링부트 모듈 ═══ -->
-  <rect x="80" y="320" width="360" height="150" rx="10" fill="#f0f7f0" stroke="#2e7d32" stroke-width="2.2"/>
-  <text x="100" y="348" font-size="15" font-weight="bold" fill="#1a1a2e">📁 businesscard_qr/</text>
-  <text x="100" y="371" font-size="12.5" fill="#2e7d32" font-weight="bold">독립 실행 가능한 스프링부트 앱 (명함 API)</text>
-  <text x="100" y="392" font-size="12" fill="#555">· 자기 main 클래스 + 자기 jar</text>
-  <text x="100" y="411" font-size="12" fill="#555">· 자체 gradlew·settings.gradle도 있음 (원래 별도</text>
-  <text x="110" y="429" font-size="12" fill="#555">프로젝트였던 흔적 → IDE에서 단독으로도 열림)</text>
-  <text x="100" y="452" font-size="11.5" fill="#888">루트에서 빌드 시엔 루트 settings.gradle이 기준</text>
+  <!-- step 1 -->
+  <circle cx="712" cy="168" r="14" fill="#ffffff" stroke="#cbd1db" stroke-width="1.5"/>
+  <text x="712" y="173" font-size="12" font-weight="bold" fill="#464c60" text-anchor="middle">1</text>
+  <text x="742" y="164" font-size="14" font-weight="bold" fill="#1a1e26">Dockerfile (단일, 멀티스테이지)</text>
+  <text x="742" y="185" font-size="12.5" fill="#586475">루트 하나로 전 모듈 빌드 · 인프라 설정 한곳 관리</text>
 
-  <rect x="465" y="320" width="360" height="150" rx="10" fill="#fafafa" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-  <text x="485" y="348" font-size="15" font-weight="bold" fill="#888">📁 project_a/ (향후)</text>
-  <text x="485" y="371" font-size="12.5" fill="#888" font-weight="bold">로컬에서 완성한 프로젝트를 폴더째 투하</text>
-  <text x="485" y="392" font-size="12" fill="#aaa">· include 한 줄 + Dockerfile 3곳 + start.sh 목록</text>
-  <text x="485" y="411" font-size="12" fill="#aaa">· 배포 적합화(env·PORT·healthz)만 하면 끝</text>
-  <text x="485" y="452" font-size="11.5" fill="#888">"독립 앱이면서 모듈" — businesscard_qr과 동일 지위</text>
+  <!-- step 2 -->
+  <circle cx="712" cy="248" r="14" fill="#ffffff" stroke="#cbd1db" stroke-width="1.5"/>
+  <text x="712" y="253" font-size="12" font-weight="bold" fill="#464c60" text-anchor="middle">2</text>
+  <text x="742" y="244" font-size="14" font-weight="bold" fill="#1a1e26">gradlew :…:bootJar</text>
+  <text x="742" y="265" font-size="12.5" fill="#586475">모든 모듈 jar 빌드 → <tspan fill="#4453c6" font-weight="bold">businesscard_qr.jar</tspan>, <tspan fill="#0d8a7b" font-weight="bold">doll_gacha.jar</tspan></text>
 
-  <!-- ═══ Flutter 앱 ═══ -->
-  <rect x="80" y="500" width="500" height="120" rx="10" fill="#eef4ff" stroke="#2b5cad" stroke-width="2" stroke-dasharray="8 5"/>
-  <text x="100" y="528" font-size="15" font-weight="bold" fill="#1a1a2e">📁 businesscard_qr_app/</text>
-  <text x="100" y="551" font-size="12.5" fill="#2b5cad" font-weight="bold">완전 별개의 Flutter(Dart) 프로젝트 — Gradle 멤버 아님</text>
-  <text x="100" y="572" font-size="12" fill="#555">· settings.gradle에 include 안 됨 · Dockerfile에도 안 들어감</text>
-  <text x="100" y="591" font-size="12" fill="#555">· 클로드코드가 서버·앱을 같이 보고 수정할 수 있게 한 폴더에 둔 것</text>
-  <text x="100" y="610" font-size="12" fill="#555">· 배포는 APK/스토어로 별도 (서버 배포와 무관)</text>
+  <!-- step 3 -->
+  <circle cx="712" cy="328" r="14" fill="#ffffff" stroke="#cbd1db" stroke-width="1.5"/>
+  <text x="712" y="333" font-size="12" font-weight="bold" fill="#464c60" text-anchor="middle">3</text>
+  <text x="742" y="324" font-size="14" font-weight="bold" fill="#1a1e26">이미지 1개 (모든 jar 포함)</text>
+  <text x="742" y="345" font-size="12.5" fill="#586475">서비스마다 같은 이미지를 쓴다</text>
 
-  <!-- 제외 표시 -->
-  <line x1="195" y1="231" x2="150" y2="497" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="4 4"/>
-  <text x="120" y="380" font-size="16" font-weight="bold" fill="#c0392b">✕</text>
-  <text x="88" y="488" font-size="11.5" fill="#c0392b">include 대상 아님</text>
+  <!-- step 4 -->
+  <circle cx="712" cy="408" r="14" fill="#ffffff" stroke="#cbd1db" stroke-width="1.5"/>
+  <text x="712" y="413" font-size="12" font-weight="bold" fill="#464c60" text-anchor="middle">4</text>
+  <text x="742" y="404" font-size="14" font-weight="bold" fill="#1a1e26">start.sh — APP_MODULE로 선택</text>
+  <text x="742" y="425" font-size="12.5" fill="#586475">java -jar $APP_MODULE.jar · JVM 힙 -Xmx384m 기본</text>
 
-  <!-- 문서 폴더 -->
-  <rect x="610" y="500" width="215" height="120" rx="10" fill="#f5f5f5" stroke="#999" stroke-width="1.5"/>
-  <text x="630" y="528" font-size="14" font-weight="bold" fill="#555">📁 문서 폴더들</text>
-  <text x="630" y="552" font-size="12" fill="#666">· total_설계/ (전체 기준 문서)</text>
-  <text x="630" y="571" font-size="12" fill="#666">· 클로드코드와응답/ (작업 기록)</text>
-  <text x="630" y="590" font-size="12" fill="#666">· 클로드코드참고용/ (참고사항)</text>
-  <text x="630" y="612" font-size="11.5" fill="#999">빌드·배포와 무관</text>
+  <!-- step ▶ -->
+  <circle cx="712" cy="500" r="14" fill="#464c60" stroke="#464c60" stroke-width="1.5"/>
+  <text x="712" y="505" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">▶</text>
+  <text x="742" y="490" font-size="14" font-weight="bold" fill="#1a1e26">서비스마다 다른 APP_MODULE</text>
+  <text x="742" y="511" font-size="12.5" fill="#586475"><tspan fill="#4453c6" font-weight="bold">businesscard_qr</tspan> 서비스 · <tspan fill="#0d8a7b" font-weight="bold">doll_gacha</tspan> 서비스</text>
+  <text x="742" y="530" font-size="12" fill="#8b94a3">같은 이미지, 다른 역할 — 모듈이 늘면 서비스만 + Add</text>
 
-  <!-- 하단 요약 -->
-  <rect x="80" y="645" width="745" height="92" rx="10" fill="#fffbe6" stroke="#d4a017" stroke-width="1.5"/>
-  <text x="100" y="673" font-size="13.5" font-weight="bold" fill="#7a5a00">한 줄 요약</text>
-  <text x="100" y="697" font-size="12.5" fill="#333">total_module = 실행 코드 없는 <tspan font-weight="bold">상위 폴더(멀티모듈 루트)</tspan>. 스프링부트 모듈들은 <tspan font-weight="bold">각자 독립 앱이면서 Gradle 모듈</tspan>,</text>
-  <text x="100" y="718" font-size="12.5" fill="#333">Flutter 앱은 <tspan font-weight="bold">소속 없이 얹혀 있는 별개 프로젝트</tspan>. 배포 시엔 루트 Dockerfile이 모듈 jar들만 포장한다.</text>
-
-  <!-- ═══ 우측 패널 ═══ -->
-  <rect x="880" y="95" width="400" height="290" rx="10" fill="#eef4ff" stroke="#2b5cad" stroke-width="1.5"/>
-  <text x="900" y="125" font-size="15" font-weight="bold" fill="#2b5cad">프로젝트 A를 가져올 때 (6단계)</text>
-  <text x="900" y="153" font-size="13" fill="#333">① A 폴더를 total_module 바로 밑에 놓기</text>
-  <text x="900" y="180" font-size="13" fill="#333">② 루트 settings.gradle에 한 줄 추가:</text>
-  <text x="920" y="201" font-size="12.5" fill="#555" font-family="Consolas, monospace">include 'project_a'</text>
-  <text x="900" y="228" font-size="13" fill="#333">③ Dockerfile의 [새 모듈 추가 시] 주석 3곳 반영</text>
-  <text x="900" y="255" font-size="13" fill="#333">④ start.sh의 APP_MODULE 허용 목록에 추가</text>
-  <text x="900" y="282" font-size="13" fill="#333">⑤ Railway 서비스 생성 (APP_MODULE=project_a)</text>
-  <text x="900" y="309" font-size="13" fill="#333">⑥ Generate Domain → 클라이언트가 그 도메인 사용</text>
-  <text x="900" y="340" font-size="12" fill="#c0392b">※ 게이트웨이 라우팅 단계는 없음 (은퇴됨)</text>
-  <text x="900" y="362" font-size="12" fill="#666">※ A의 클라이언트(앱/웹)는 include 없이 폴더만 두면 됨</text>
-
-  <rect x="880" y="415" width="400" height="220" rx="10" fill="#f0f7f0" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="900" y="445" font-size="15" font-weight="bold" fill="#2e7d32">빌드가 두 가지로 되는 이유</text>
-  <text x="900" y="475" font-size="13" font-weight="bold" fill="#333">루트에서 (배포 경로):</text>
-  <text x="920" y="496" font-size="12" fill="#555" font-family="Consolas, monospace">gradlew :businesscard_qr:bootJar</text>
-  <text x="920" y="516" font-size="12" fill="#666">→ 루트 settings.gradle 기준, 모듈로 취급</text>
-  <text x="900" y="546" font-size="13" font-weight="bold" fill="#333">모듈 폴더에서 (개발 편의):</text>
-  <text x="920" y="567" font-size="12" fill="#555" font-family="Consolas, monospace">cd businesscard_qr; gradlew bootRun</text>
-  <text x="920" y="587" font-size="12" fill="#666">→ 자기 settings.gradle 기준, 독립 프로젝트</text>
-  <text x="900" y="617" font-size="12" fill="#888">둘 다 되는 건 모듈 안에 wrapper·settings가 남아 있어서</text>
-
-  <rect x="880" y="665" width="400" height="100" rx="10" fill="#fff5f5" stroke="#c0392b" stroke-width="1.5"/>
-  <text x="900" y="695" font-size="14" font-weight="bold" fill="#c0392b">헷갈리기 쉬운 것</text>
-  <text x="900" y="721" font-size="12.5" fill="#333">"통합"은 저장소·이미지 차원이고, <tspan font-weight="bold">jar은 안 합쳐짐</tspan> —</text>
-  <text x="900" y="741" font-size="12.5" fill="#333">이미지 1개에 jar N개, Railway 서비스가 모듈마다 1개씩 실행</text>
+  <text x="692" y="600" font-size="11.5" fill="#586475">각 서비스는 Networking → Generate Domain 으로 자기 공개 URL을 갖고,</text>
+  <text x="692" y="620" font-size="11.5" fill="#586475">DB는 공통 total_mysql(스키마 분리), 파일은 모듈별 버킷을 쓴다. (→ 서버아키텍처.svg)</text>
 </svg>

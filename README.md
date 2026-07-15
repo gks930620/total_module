@@ -1,7 +1,7 @@
 # total_module
 
 로컬에서 완성한 스프링부트 프로젝트들을 모아 **하나의 Railway 프로젝트로 통합 배포**하는 저장소.
-아키텍처 기준: [total_설계/아키텍처_방향결정.md](total_설계/아키텍처_방향결정.md)
+아키텍처 기준: [total_설계/아키텍처_및_편입기준.md](total_설계/아키텍처_및_편입기준.md)
 
 ```
 저장소 1개 = Railway 프로젝트 1개
@@ -19,7 +19,7 @@
 
 ## Railway 배포
 
-서비스별 환경변수와 절차: [total_설계/railway_배포_실행가이드.md](total_설계/railway_배포_실행가이드.md)
+서비스별 환경변수와 절차: [total_설계/railway_배포_및_비용.md](total_설계/railway_배포_및_비용.md)
 
 핵심 (businesscard_qr 서비스):
 
@@ -32,7 +32,7 @@
 
 ## 새 모듈 추가 절차
 
-[total_설계/아키텍처_방향결정.md](total_설계/아키텍처_방향결정.md) §3 참고. 요약:
+[total_설계/아키텍처_및_편입기준.md](total_설계/아키텍처_및_편입기준.md) §4 참고. 요약:
 
 1. 프로젝트 폴더를 루트에 추가
 2. `settings.gradle`에 `include '<module>'`

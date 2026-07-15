@@ -1,129 +1,137 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1340" height="880" viewBox="0 0 1340 880" font-family="Segoe UI, Malgun Gothic, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1340" height="900" viewBox="0 0 1340 900" font-family="Segoe UI, Malgun Gothic, 'Apple SD Gothic Neo', sans-serif">
   <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-      <path d="M0,0 L10,4 L0,8 z" fill="#444"/>
-    </marker>
-    <marker id="arrowDash" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-      <path d="M0,0 L10,4 L0,8 z" fill="#999"/>
-    </marker>
+    <marker id="arA" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#4453c6"/></marker>
+    <marker id="arB" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#0d8a7b"/></marker>
+    <marker id="arG" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#a9b0bd"/></marker>
   </defs>
 
-  <rect x="0" y="0" width="1340" height="880" fill="#ffffff"/>
+  <rect x="0" y="0" width="1340" height="900" fill="#ffffff"/>
 
   <!-- 제목 -->
-  <text x="40" y="44" font-size="24" font-weight="bold" fill="#1a1a2e">total_module 서버 아키텍처 — 모듈 = Railway 서비스, 각자 자기 URL 직행</text>
-  <text x="40" y="72" font-size="14" fill="#666">2026-07-08 확정 (total_설계/아키텍처_방향결정.md). 게이트웨이 없음 — 클라이언트가 해당 모듈 서비스의 공개 도메인을 직접 호출한다.</text>
+  <text x="40" y="46" font-size="24" font-weight="bold" fill="#1a1e26">total_module 서버 아키텍처 — 모듈 = Railway 서비스, 각자 자기 URL 직행</text>
+  <text x="40" y="74" font-size="13.5" fill="#586475">저장소 1개 = Railway 프로젝트 1개 · 루트 단일 Dockerfile · 게이트웨이 없음 · DB는 공통 MySQL(스키마 분리) · 파일은 모듈별 버킷(S3)</text>
 
-  <!-- ═══ 클라이언트 영역 ═══ -->
-  <rect x="60" y="100" width="800" height="120" rx="10" fill="#eef4ff" stroke="#7aa2e8" stroke-width="1.5"/>
-  <text x="80" y="126" font-size="14" font-weight="bold" fill="#2b5cad">클라이언트 (서버 배포와 무관 — 각자 자기 모듈 서비스만 바라봄)</text>
+  <!-- ═══ 클라이언트 ═══ -->
+  <rect x="50" y="100" width="800" height="120" rx="10" fill="#eef4ff" stroke="#7aa2e8" stroke-width="1.5"/>
+  <text x="70" y="126" font-size="14" font-weight="bold" fill="#2b5cad">클라이언트 (서버 배포와 무관 — 각자 자기 모듈 서비스만 바라봄)</text>
 
-  <rect x="90" y="142" width="230" height="60" rx="8" fill="#ffffff" stroke="#2b5cad" stroke-width="1.5"/>
-  <text x="205" y="167" font-size="14" font-weight="bold" fill="#1a1a2e" text-anchor="middle">Flutter 앱 (명함 QR)</text>
-  <text x="205" y="188" font-size="12" fill="#666" text-anchor="middle">businesscard_qr_app</text>
+  <rect x="80" y="142" width="235" height="62" rx="8" fill="#ffffff" stroke="#4453c6" stroke-width="1.8"/>
+  <text x="197" y="168" font-size="14" font-weight="bold" fill="#1a1e26" text-anchor="middle">Flutter 앱 (명함 QR)</text>
+  <text x="197" y="189" font-size="12" fill="#586475" text-anchor="middle">businesscard_qr_app · APK 별도</text>
 
-  <rect x="350" y="142" width="230" height="60" rx="8" fill="#ffffff" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-  <text x="465" y="167" font-size="14" font-weight="bold" fill="#888" text-anchor="middle">앱/웹 A (향후)</text>
-  <text x="465" y="188" font-size="12" fill="#aaa" text-anchor="middle">프로젝트 A용 클라이언트</text>
+  <rect x="335" y="142" width="255" height="62" rx="8" fill="#ffffff" stroke="#0d8a7b" stroke-width="1.8"/>
+  <text x="462" y="168" font-size="14" font-weight="bold" fill="#1a1e26" text-anchor="middle">브라우저 (인형뽑기 화면)</text>
+  <text x="462" y="189" font-size="12" fill="#586475" text-anchor="middle">doll_gacha React (스프링부트가 서빙)</text>
 
-  <rect x="610" y="142" width="230" height="60" rx="8" fill="#ffffff" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-  <text x="725" y="167" font-size="14" font-weight="bold" fill="#888" text-anchor="middle">정적 웹 B (예: github.io)</text>
-  <text x="725" y="188" font-size="12" fill="#aaa" text-anchor="middle">브라우저 fetch (CORS 필요)</text>
+  <rect x="610" y="142" width="230" height="62" rx="8" fill="#fafafa" stroke="#b0b0b0" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="725" y="168" font-size="14" font-weight="bold" fill="#9aa1ad" text-anchor="middle">앱/웹 A (향후)</text>
+  <text x="725" y="189" font-size="12" fill="#aeb4bf" text-anchor="middle">프로젝트 A용 클라이언트</text>
 
-  <!-- 클라이언트 → 각 서비스 직행 화살표 -->
-  <line x1="205" y1="202" x2="205" y2="336" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="95" y="250" font-size="12" font-weight="bold" fill="#333">HTTPS 직접</text>
-  <text x="95" y="268" font-size="11.5" fill="#666">businesscardqr-production</text>
-  <text x="95" y="284" font-size="11.5" fill="#666">.up.railway.app</text>
+  <!-- 클라이언트 → 서비스 화살표 -->
+  <line x1="197" y1="204" x2="192" y2="300" stroke="#4453c6" stroke-width="2" marker-end="url(#arA)"/>
+  <line x1="462" y1="204" x2="447" y2="300" stroke="#0d8a7b" stroke-width="2" marker-end="url(#arB)"/>
+  <line x1="725" y1="204" x2="712" y2="300" stroke="#a9b0bd" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arG)"/>
+  <text x="864" y="258" font-size="12.5" fill="#586475" text-anchor="end" font-weight="bold">HTTPS · 각 서비스 자기 공개 URL 직행</text>
+  <text x="864" y="276" font-size="12" fill="#c0392b" text-anchor="end">게이트웨이 없음</text>
 
-  <line x1="465" y1="202" x2="465" y2="336" stroke="#999" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowDash)"/>
-  <text x="478" y="265" font-size="11.5" fill="#888">project-a-….up.railway.app</text>
+  <!-- ═══ Railway 프로젝트 ═══ -->
+  <rect x="50" y="300" width="800" height="510" rx="12" fill="#f7f2ff" stroke="#9b7ade" stroke-width="2"/>
+  <text x="70" y="328" font-size="15" font-weight="bold" fill="#5a3ba6">Railway 프로젝트 (1개) · total_module — 모듈이 늘면 서비스만 + Add</text>
 
-  <line x1="725" y1="202" x2="725" y2="336" stroke="#999" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowDash)"/>
-  <text x="738" y="265" font-size="11.5" fill="#888">project-b-….up.railway.app</text>
+  <!-- 서비스 카드 -->
+  <rect x="75" y="345" width="235" height="122" rx="10" fill="#ffffff" stroke="#4453c6" stroke-width="2.5"/>
+  <text x="192" y="373" font-size="15" font-weight="bold" fill="#4453c6" text-anchor="middle">businesscard_qr</text>
+  <text x="192" y="394" font-size="12" fill="#586475" text-anchor="middle">명함 QR API (Spring Boot)</text>
+  <text x="192" y="412" font-size="12" fill="#586475" text-anchor="middle">카카오→JWT · CRUD · vCard</text>
+  <text x="192" y="432" font-size="11.5" font-weight="bold" fill="#4453c6" text-anchor="middle">APP_MODULE=businesscard_qr</text>
+  <text x="192" y="452" font-size="11" fill="#8b94a3" text-anchor="middle">App Sleeping · /healthz · /swagger</text>
 
-  <!-- ═══ Railway 영역 ═══ -->
-  <rect x="60" y="316" width="800" height="470" rx="12" fill="#f7f2ff" stroke="#9b7ade" stroke-width="2"/>
-  <text x="80" y="344" font-size="15" font-weight="bold" fill="#5a3ba6">Railway 프로젝트 (1개) — 모듈이 늘면 서비스만 + Add (프로젝트는 그대로)</text>
+  <rect x="330" y="345" width="235" height="122" rx="10" fill="#ffffff" stroke="#0d8a7b" stroke-width="2.5"/>
+  <text x="447" y="373" font-size="15" font-weight="bold" fill="#0d8a7b" text-anchor="middle">doll_gacha</text>
+  <text x="447" y="394" font-size="12" fill="#586475" text-anchor="middle">인형뽑기 (Spring Boot + React)</text>
+  <text x="447" y="412" font-size="12" fill="#586475" text-anchor="middle">OAuth2 카카오·구글 · 정적 서빙</text>
+  <text x="447" y="432" font-size="11.5" font-weight="bold" fill="#0d8a7b" text-anchor="middle">APP_MODULE=doll_gacha</text>
+  <text x="447" y="452" font-size="11" fill="#8b94a3" text-anchor="middle">App Sleeping · /healthz</text>
 
-  <!-- 서비스 행 -->
-  <rect x="90" y="366" width="240" height="120" rx="10" fill="#ffffff" stroke="#2e7d32" stroke-width="2.5"/>
-  <text x="210" y="394" font-size="14.5" font-weight="bold" fill="#1a1a2e" text-anchor="middle">businesscard_qr</text>
-  <text x="210" y="415" font-size="12" fill="#555" text-anchor="middle">명함 API (Spring Boot)</text>
-  <text x="210" y="434" font-size="12" fill="#555" text-anchor="middle">카카오→JWT · 명함 CRUD · vCard</text>
-  <text x="210" y="453" font-size="12" fill="#2e7d32" text-anchor="middle" font-weight="bold">APP_MODULE=businesscard_qr</text>
-  <text x="210" y="473" font-size="11.5" fill="#888" text-anchor="middle">자기 공개 도메인으로 직접 수신</text>
+  <rect x="585" y="345" width="240" height="122" rx="10" fill="#fafafa" stroke="#b0b0b0" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="705" y="379" font-size="15" font-weight="bold" fill="#9aa1ad" text-anchor="middle">프로젝트 A (향후)</text>
+  <text x="705" y="403" font-size="12" fill="#aeb4bf" text-anchor="middle">로컬 완성 후 모듈로 편입</text>
+  <text x="705" y="425" font-size="11.5" fill="#aeb4bf" text-anchor="middle">APP_MODULE=project_a</text>
+  <text x="705" y="447" font-size="11" fill="#c2c7d0" text-anchor="middle">편입 시 DB스키마·버킷 추가</text>
 
-  <rect x="350" y="366" width="230" height="120" rx="10" fill="#fafafa" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-  <text x="465" y="400" font-size="14.5" font-weight="bold" fill="#888" text-anchor="middle">프로젝트 A (향후)</text>
-  <text x="465" y="424" font-size="12" fill="#aaa" text-anchor="middle">로컬 완성 후 모듈로 편입</text>
-  <text x="465" y="446" font-size="12" fill="#aaa" text-anchor="middle">APP_MODULE=project_a</text>
+  <!-- 서비스 → 데이터 -->
+  <line x1="192" y1="467" x2="192" y2="540" stroke="#4453c6" stroke-width="2" marker-end="url(#arA)"/>
+  <line x1="447" y1="467" x2="447" y2="540" stroke="#0d8a7b" stroke-width="2" marker-end="url(#arB)"/>
+  <text x="205" y="508" font-size="10.5" fill="#4453c6">schema+버킷</text>
+  <text x="460" y="508" font-size="10.5" fill="#0d8a7b">schema+버킷</text>
 
-  <rect x="610" y="366" width="230" height="120" rx="10" fill="#fafafa" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-  <text x="725" y="400" font-size="14.5" font-weight="bold" fill="#888" text-anchor="middle">프로젝트 B (향후)</text>
-  <text x="725" y="424" font-size="12" fill="#aaa" text-anchor="middle">로컬 완성 후 모듈로 편입</text>
-  <text x="725" y="446" font-size="12" fill="#aaa" text-anchor="middle">APP_MODULE=project_b</text>
+  <!-- 데이터 밴드 -->
+  <rect x="75" y="540" width="765" height="150" rx="10" fill="#fbfcff" stroke="#d5d9e4" stroke-width="1.2"/>
+  <text x="92" y="562" font-size="12.5" font-weight="bold" fill="#5c6675">데이터 — 공통 MySQL 1개(스키마로 모듈 분리) + 모듈별 버킷(S3)</text>
 
-  <!-- 서비스 → DB -->
-  <line x1="210" y1="486" x2="210" y2="566" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="222" y="530" font-size="11.5" fill="#666">${{mysql.XXX}} 변수 참조</text>
-  <line x1="465" y1="486" x2="465" y2="566" stroke="#999" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowDash)"/>
-  <line x1="725" y1="486" x2="725" y2="566" stroke="#999" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowDash)"/>
+  <!-- MySQL 실린더 -->
+  <path d="M100,600 v52 a70,11 0 0 0 140,0 v-52" fill="#fff8e6" stroke="#b8860b" stroke-width="2"/>
+  <ellipse cx="170" cy="600" rx="70" ry="11" fill="#fff3cc" stroke="#b8860b" stroke-width="2"/>
+  <text x="170" y="628" font-size="13" font-weight="bold" fill="#1a1e26" text-anchor="middle">total_mysql</text>
+  <text x="170" y="646" font-size="11" fill="#586475" text-anchor="middle">MySQL 1개 · +볼륨</text>
 
-  <!-- DB 행 -->
-  <g>
-    <path d="M110,582 v76 a100,14 0 0 0 200,0 v-76" fill="#fff8e6" stroke="#b8860b" stroke-width="2"/>
-    <ellipse cx="210" cy="582" rx="100" ry="14" fill="#fff3cc" stroke="#b8860b" stroke-width="2"/>
-    <text x="210" y="618" font-size="13" font-weight="bold" fill="#1a1a2e" text-anchor="middle">Railway MySQL (+볼륨)</text>
-    <text x="210" y="637" font-size="11.5" fill="#555" text-anchor="middle">app_users · business_cards</text>
-    <text x="210" y="654" font-size="11.5" fill="#555" text-anchor="middle">stored_files(이미지 LONGBLOB)</text>
-  </g>
-  <g opacity="0.6">
-    <path d="M395,582 v66 a70,12 0 0 0 140,0 v-66" fill="#fafafa" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <ellipse cx="465" cy="582" rx="70" ry="12" fill="#f0f0f0" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <text x="465" y="620" font-size="12" fill="#888" text-anchor="middle">DB A (필요 시,</text>
-    <text x="465" y="636" font-size="12" fill="#888" text-anchor="middle">mysql 공유도 가능)</text>
-  </g>
-  <g opacity="0.6">
-    <path d="M645,582 v66 a70,12 0 0 0 140,0 v-66" fill="#fafafa" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <ellipse cx="725" cy="582" rx="70" ry="12" fill="#f0f0f0" stroke="#999" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <text x="725" y="624" font-size="12" fill="#888" text-anchor="middle">DB B (필요 시)</text>
-  </g>
+  <!-- 스키마 칩 -->
+  <rect x="258" y="583" width="176" height="28" rx="6" fill="#eef0fb" stroke="#4453c6" stroke-width="1.2"/>
+  <text x="346" y="601" font-size="12" font-weight="bold" fill="#4453c6" text-anchor="middle">schema: businesscard</text>
+  <rect x="258" y="619" width="176" height="28" rx="6" fill="#e6f5f2" stroke="#0d8a7b" stroke-width="1.2"/>
+  <text x="346" y="637" font-size="12" font-weight="bold" fill="#0d8a7b" text-anchor="middle">schema: doll_gacha</text>
+  <text x="346" y="666" font-size="10.5" fill="#8b94a3" text-anchor="middle">인스턴스 1개 · 스키마로 분리(충돌 없음)</text>
 
-  <!-- 은퇴 노트 -->
-  <text x="80" y="712" font-size="12.5" fill="#c0392b" font-weight="bold">✝ dist_api_gateway (리버스 프록시) — 2026-07-08 은퇴.</text>
-  <text x="80" y="732" font-size="12" fill="#996655">초기 "서버 1대로 합쳐 배포" 설계의 유산으로, 모듈별 서비스 분리 후 존재 이유가 사라져 삭제됨.</text>
-  <text x="80" y="750" font-size="12" fill="#996655">코드는 git 히스토리(안정화 완료 상태)에 보존 — 진짜 게이트웨이가 필요해지면 부활 가능.</text>
-  <text x="80" y="774" font-size="12" fill="#5a3ba6">※ 서비스들은 같은 저장소·같은 Docker 이미지를 쓰고 APP_MODULE로 역할만 다르게 실행된다.</text>
+  <!-- 버킷 -->
+  <rect x="470" y="583" width="175" height="52" rx="9" fill="#eef0fb" stroke="#4453c6" stroke-width="1.8"/>
+  <text x="557" y="606" font-size="12.5" font-weight="bold" fill="#4453c6" text-anchor="middle">businesscard_bucket</text>
+  <text x="557" y="624" font-size="10.5" fill="#586475" text-anchor="middle">S3 · private · /uploads 프록시</text>
+  <rect x="655" y="583" width="170" height="52" rx="9" fill="#e6f5f2" stroke="#0d8a7b" stroke-width="1.8"/>
+  <text x="740" y="606" font-size="12.5" font-weight="bold" fill="#0d8a7b" text-anchor="middle">doll_gacha_bucket</text>
+  <text x="740" y="624" font-size="10.5" fill="#586475" text-anchor="middle">S3 · private</text>
+  <text x="647" y="666" font-size="10.5" fill="#8b94a3" text-anchor="middle">버킷은 모듈별 (용량 과금이라 개수 무관)</text>
+
+  <!-- 하단 노트 -->
+  <text x="75" y="720" font-size="12.5" font-weight="bold" fill="#c0392b">✗ dist_api_gateway (리버스 프록시) — 2026-07-08 은퇴·삭제 완료</text>
+  <text x="75" y="740" font-size="11.5" fill="#8a7a6a">초기 "서버 1대로 합쳐 배포" 설계의 유산. 모듈별 서비스 분리로 존재 이유가 사라져 제거(필요 시 git에서 부활).</text>
+  <text x="75" y="766" font-size="11.5" fill="#5a3ba6">※ 서비스들은 같은 저장소·같은 Docker 이미지를 쓰고 APP_MODULE로 역할만 다르게 실행.</text>
+  <text x="75" y="786" font-size="11.5" fill="#5a3ba6">※ DB는 인스턴스 1개(스키마 분리) / 버킷은 모듈별. App Sleeping + Hard limit $5로 비용 관리.</text>
 
   <!-- ═══ 우측 패널 ═══ -->
-  <rect x="900" y="100" width="400" height="230" rx="10" fill="#f0f7f0" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="920" y="128" font-size="15" font-weight="bold" fill="#2e7d32">배포 방식: 한 저장소 → 여러 Railway 서비스</text>
-  <text x="920" y="156" font-size="13" fill="#333">· GitHub 저장소 1개 (total_module)</text>
-  <text x="920" y="180" font-size="13" fill="#333">· 루트 <tspan font-weight="bold">단일 Dockerfile</tspan> → 이미지 1개에 모든 모듈 jar</text>
-  <text x="920" y="204" font-size="13" fill="#333">· 서비스마다 <tspan font-weight="bold" fill="#6b46c1">APP_MODULE</tspan>로 실행할 jar 선택</text>
-  <text x="920" y="228" font-size="13" fill="#333">· 헬스체크: 모든 모듈 <tspan font-weight="bold">GET /healthz</tspan></text>
-  <text x="920" y="252" font-size="13" fill="#333">· master push → 저장소를 보는 서비스들 재배포</text>
-  <text x="920" y="276" font-size="13" fill="#333">· 각 서비스 Networking → Generate Domain으로</text>
-  <text x="932" y="296" font-size="13" fill="#333">자기 공개 URL 생성 (공짜)</text>
-  <text x="920" y="320" font-size="12" fill="#c0392b">⚠ jar 하나로 합치지 않음 — 모듈=서비스 1:1</text>
+  <!-- 배포 방식 -->
+  <rect x="890" y="100" width="410" height="210" rx="10" fill="#f0f7f0" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="910" y="127" font-size="14.5" font-weight="bold" fill="#2e7d32">배포 방식: 한 저장소 → 여러 서비스</text>
+  <text x="910" y="153" font-size="12.5" fill="#333">· GitHub 저장소 1개 (total_module)</text>
+  <text x="910" y="175" font-size="12.5" fill="#333">· 루트 단일 Dockerfile → 이미지 1개(모든 모듈 jar)</text>
+  <text x="910" y="197" font-size="12.5" fill="#333">· 서비스마다 APP_MODULE로 실행할 jar 선택</text>
+  <text x="910" y="219" font-size="12.5" fill="#333">· 헬스체크 GET /healthz (모든 모듈)</text>
+  <text x="910" y="241" font-size="12.5" fill="#333">· master push → 저장소 보는 서비스들 재배포</text>
+  <text x="910" y="263" font-size="12.5" fill="#333">· Generate Domain으로 자기 공개 URL</text>
+  <text x="910" y="289" font-size="12.5" font-weight="bold" fill="#c0392b">⚠ jar 하나로 안 합침 — 모듈 = 서비스 1:1</text>
 
-  <rect x="900" y="354" width="400" height="240" rx="10" fill="#eef4ff" stroke="#2b5cad" stroke-width="1.5"/>
-  <text x="920" y="382" font-size="15" font-weight="bold" fill="#2b5cad">프로젝트 A/B 추가 절차 (게이트웨이 단계 없음)</text>
-  <text x="920" y="410" font-size="13" fill="#333">① 로컬에서 완성한 모듈을 루트에 폴더로 편입</text>
-  <text x="920" y="434" font-size="13" fill="#333">② settings.gradle에 include 추가</text>
-  <text x="920" y="458" font-size="13" fill="#333">③ Dockerfile [새 모듈 추가 시] 주석 3곳 + start.sh 목록</text>
-  <text x="920" y="482" font-size="13" fill="#333">④ 배포 적합화: env 주입 · PORT · /healthz · 디스크 저장 금지</text>
-  <text x="920" y="506" font-size="13" fill="#333">⑤ Railway 서비스 생성 + APP_MODULE + Generate Domain</text>
-  <text x="920" y="530" font-size="13" fill="#333">⑥ 클라이언트 base URL = 그 도메인</text>
-  <text x="920" y="560" font-size="12" fill="#666">상세: total_설계/아키텍처_방향결정.md §3,</text>
-  <text x="920" y="578" font-size="12" fill="#666">웹이면 total_설계/웹프로젝트_통합_설계기준.md</text>
+  <!-- 비용 최적화 -->
+  <rect x="890" y="330" width="410" height="215" rx="10" fill="#fdf5ec" stroke="#b26a2e" stroke-width="1.5"/>
+  <text x="910" y="357" font-size="14.5" font-weight="bold" fill="#b26a2e">비용 최적화 (2026-07 결정)</text>
+  <text x="910" y="383" font-size="12.5" fill="#333">· JVM은 트래픽 0에도 RAM 상시 점유 → 앱 1개 ≈ $5</text>
+  <text x="910" y="405" font-size="12.5" fill="#333">· App Sleeping: idle 시 재움 (첫 요청 콜드스타트)</text>
+  <text x="910" y="427" font-size="12.5" fill="#333">· JVM 힙 -Xmx384m 기본 (Dockerfile start.sh)</text>
+  <text x="910" y="449" font-size="12.5" fill="#333">· DB 공통 1개 + 스키마 분리 → DB비 N→1</text>
+  <text x="910" y="471" font-size="12.5" fill="#333">· 버킷은 모듈별 (용량 과금이라 개수 무관)</text>
+  <text x="910" y="493" font-size="12.5" fill="#333">· Hard limit $5 → 초과 시 자동 정지</text>
+  <text x="910" y="521" font-size="11.5" fill="#8a7a6a">모놀리스 병합은 난이도 커서 회피 (트래픽 커지면 재검토)</text>
 
-  <rect x="900" y="618" width="400" height="168" rx="10" fill="#fff5f5" stroke="#c0392b" stroke-width="1.5"/>
-  <text x="920" y="646" font-size="15" font-weight="bold" fill="#c0392b">이 구조의 핵심 이유</text>
-  <text x="920" y="674" font-size="13" fill="#333">· "로컬에서 완성 → 그대로 투하"가 성립하려면</text>
-  <text x="932" y="694" font-size="12.5" fill="#666">프로젝트끼리 실행이 분리돼야 함 (병합 수술 불필요)</text>
-  <text x="920" y="720" font-size="13" fill="#333">· 게이트웨이는 중계만 하고 얻는 게 없어서 제거</text>
-  <text x="932" y="740" font-size="12.5" fill="#666">서버 1대 절약 + 장애 지점/프리픽스 공사 제거</text>
-  <text x="920" y="766" font-size="13" fill="#333">· 도메인 통일이 필요해지면 커스텀 서브도메인으로</text>
+  <!-- 편입 절차 -->
+  <rect x="890" y="565" width="410" height="245" rx="10" fill="#eef4ff" stroke="#2b5cad" stroke-width="1.5"/>
+  <text x="910" y="592" font-size="14.5" font-weight="bold" fill="#2b5cad">새 모듈 편입 절차</text>
+  <text x="910" y="618" font-size="12.5" fill="#333">① 로컬에서 완성한 모듈 폴더를 루트에 투하</text>
+  <text x="910" y="640" font-size="12.5" fill="#333">② settings.gradle 에 include 추가</text>
+  <text x="910" y="662" font-size="12.5" fill="#333">③ Dockerfile 3곳 + start.sh APP_MODULE 목록</text>
+  <text x="910" y="684" font-size="12.5" fill="#333">④ 배포 적합화: env 주입 · PORT · /healthz · 버킷</text>
+  <text x="910" y="706" font-size="12.5" fill="#333">⑤ Railway 서비스 생성 + APP_MODULE + Generate Domain</text>
+  <text x="910" y="728" font-size="12.5" fill="#333">⑥ 공통 MySQL에 database 생성 + 버킷 생성</text>
+  <text x="910" y="756" font-size="11.5" fill="#586475">상세: total_설계/아키텍처_및_편입기준.md §4</text>
+  <text x="910" y="776" font-size="11.5" fill="#586475">배포·비용: total_설계/railway_배포_및_비용.md</text>
+
+  <!-- 범례 -->
+  <rect x="890" y="835" width="410" height="0" fill="none"/>
 </svg>

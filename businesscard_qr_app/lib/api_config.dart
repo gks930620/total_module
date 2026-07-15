@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  // businesscard_qr 서비스의 자기 공개 도메인 (게이트웨이 은퇴 — 설계/아키텍처_방향결정.md)
+  // businesscard_qr 서비스의 자기 공개 도메인 (게이트웨이 은퇴 — total_설계/아키텍처_및_편입기준.md)
   static const String _defaultBaseUrl =
       'https://businesscardqr-production.up.railway.app';
 
