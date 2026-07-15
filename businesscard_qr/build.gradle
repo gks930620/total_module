@@ -38,8 +38,9 @@ dependencies {
 
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    // 로컬: H2 인메모리 / 운영: Railway 공통 MySQL(total_mysql) — 같은 코드가 URL(env)만으로 갈린다.
     runtimeOnly 'com.h2database:h2'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    runtimeOnly 'com.mysql:mysql-connector-j'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
