@@ -51,9 +51,12 @@ DB:   공통 MySQL 1개 + 모듈별 스키마
 3. 모듈 database(스키마) 생성 — §4
 
 ### 2-2. 앱 서비스 (모듈마다 반복)
+
+> ⚠️ **Railway엔 "어느 모듈이냐" 폴더 선택 항목이 없다.** Root Directory는 `/`(레포 전체 → 루트 Dockerfile이 **전 모듈 jar를 다 빌드**해 이미지 1개에 담음). **어느 모듈을 띄울지는 `APP_MODULE` 환경변수로 고른다**(예: `APP_MODULE=doll_gacha`). Root를 `/doll_gacha`로 바꾸는 게 아니다 — 모든 모듈 서비스가 같은 레포·같은 Dockerfile을 쓰고 `APP_MODULE`만 다르다. (근거: [`아키텍처_및_편입기준.md`](아키텍처_및_편입기준.md) §2)
+
 1. `+ New → Service → GitHub Repo → total_module`
 2. 서비스 이름을 모듈명(예 `doll_gacha`)으로
-3. `Settings`: Branch `master`, Root Directory 비움, Build/Start Command 비움, Healthcheck `/healthz`
+3. `Settings`: Branch `master`, **Root Directory 비움(=`/`)**, Build/Start Command 비움, Healthcheck `/healthz`
 4. `Networking → Generate Domain` → 도메인 메모(예 `dollgacha-production.up.railway.app`) → base URL env에 사용
 5. `Variables` 입력 (§3)
 6. (파일 업로드 모듈이면) Storage Bucket 생성 (§5)
