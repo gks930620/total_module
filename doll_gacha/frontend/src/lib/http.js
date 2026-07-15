@@ -6,9 +6,12 @@
 let isRefreshing = false
 let refreshSubscribers = []
 
-function onRefreshed() {
-  refreshSubscribers.forEach((cb) => cb())
+// 재발급 완료를 대기 중인 요청들에게 결과(ok)를 통지한다.
+// ⚠️ 재발급 "실패" 시에도 반드시 호출해야 대기 중이던 Promise 들이 결말나서 hang 되지 않는다.
+function notifyRefreshed(ok) {
+  const subscribers = refreshSubscribers
   refreshSubscribers = []
+  subscribers.forEach((cb) => cb(ok))
 }
 
 async function tryRefreshToken() {
@@ -72,19 +75,22 @@ export async function authFetch(url, options = {}) {
         isRefreshing = true
         const ok = await tryRefreshToken()
         isRefreshing = false
+        notifyRefreshed(ok) // 성공/실패 모두 대기자에게 통지 (실패 시에도 hang 방지)
         if (ok) {
-          onRefreshed()
           await new Promise((r) => setTimeout(r, 50))
           return fetch(url, merged)
         }
-        refreshSubscribers = []
-        return response
+        return response // 재발급 실패 → 원래 401 반환
       }
-      // 이미 재발급 중이면 완료 후 재시도
+      // 이미 재발급 중이면 완료를 기다렸다가 처리
       return new Promise((resolve) => {
-        refreshSubscribers.push(async () => {
-          await new Promise((r) => setTimeout(r, 50))
-          resolve(fetch(url, merged))
+        refreshSubscribers.push(async (ok) => {
+          if (ok) {
+            await new Promise((r) => setTimeout(r, 50))
+            resolve(fetch(url, merged))
+          } else {
+            resolve(response) // 재발급 실패 → 원래 401 응답으로 결말 (hang 방지)
+          }
         })
       })
     }

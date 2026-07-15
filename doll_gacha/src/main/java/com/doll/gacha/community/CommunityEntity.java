@@ -56,13 +56,7 @@ public class CommunityEntity {
     }
 
     // ===== 비즈니스 메서드 =====
-
-    /**
-     * 조회수 증가
-     */
-    public void incrementViewCount() {
-        this.viewCount++;
-    }
+    //  (조회수 증가는 CommunityRepository.increaseViewCount 의 원자적 UPDATE 로 처리한다)
 
     /**
      * 게시글 수정

@@ -81,6 +81,7 @@ class ReviewControllerIntegrationTest {
                     .mediumDollCost(3000)
                     .smallDollCost(1000)
                     .createdAt(LocalDateTime.now().minusDays(1))  // 하루 전 작성으로 설정 (중복 리뷰 방지)
+                    .reviewDate(LocalDateTime.now().minusDays(1).toLocalDate())  // NOT NULL + (user,shop,date) 유니크 대상
                     .build();
             reviewRepository.save(testReview);
         }

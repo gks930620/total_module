@@ -7,12 +7,14 @@ import com.doll.gacha.file.service.FileService;
 import com.doll.gacha.file.strategy.FileStorageStrategy.FileUploadResult;
 import com.doll.gacha.file.strategy.FileStorageStrategy.LoadedFile;
 import com.doll.gacha.file.util.FileUtil;
+import com.doll.gacha.jwt.model.CustomUserAccount;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -140,10 +142,12 @@ public class FileController {
      * @param fileId 삭제할 파일 ID
      */
     @DeleteMapping("/api/files/{fileId}")
-    public ResponseEntity<ApiResponse<Void>> deleteFile(@PathVariable Long fileId) {
-        log.info("파일 삭제 요청: fileId={}", fileId);
-        // 미존재 파일은 FileService 가 예외를 던지고 GlobalExceptionHandler 가 표준 404 로 처리
-        fileService.deleteFile(fileId);
+    public ResponseEntity<ApiResponse<Void>> deleteFile(
+            @PathVariable Long fileId,
+            @AuthenticationPrincipal CustomUserAccount userAccount) {
+        log.info("파일 삭제 요청: fileId={}, user={}", fileId, userAccount.getUsername());
+        // 미존재 파일 → 404, 소유자 아님 → 403 (FileService 가 검증, GlobalExceptionHandler 가 표준 처리)
+        fileService.deleteFile(fileId, userAccount.getUsername());
         return ResponseEntity.ok(ApiResponse.success("파일이 삭제되었습니다"));
     }
 }

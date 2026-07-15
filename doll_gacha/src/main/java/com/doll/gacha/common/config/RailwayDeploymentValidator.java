@@ -1,6 +1,7 @@
 package com.doll.gacha.common.config;
 
 import jakarta.annotation.PostConstruct;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,14 @@ public class RailwayDeploymentValidator {
         if (jwtSecret == null || jwtSecret.isBlank()) {
             throw new IllegalStateException(
                     "[Railway] JWT 시크릿이 비어 있습니다. 환경변수 JWT_SECRET_KEY 를 설정하세요.");
+        }
+        // 3-1. JWT 시크릿 길이 — HS256 은 최소 256bit(32byte) 필요. 짧으면 부팅은 되고
+        //      첫 토큰 발급에서 WeakKeyException 으로 죽으므로 여기서 fail-fast 로 잡는다.
+        int secretBytes = jwtSecret.getBytes(StandardCharsets.UTF_8).length;
+        if (secretBytes < 32) {
+            throw new IllegalStateException(
+                    "[Railway] JWT 시크릿이 너무 짧습니다 (HS256 은 최소 32byte 필요, 현재 " + secretBytes + "byte). "
+                            + "환경변수 JWT_SECRET_KEY 를 32byte 이상으로 설정하세요 (예: openssl rand -base64 48).");
         }
 
         // 4. OAuth2 클라이언트 — 미설정이면 소셜 로그인 전부 불가

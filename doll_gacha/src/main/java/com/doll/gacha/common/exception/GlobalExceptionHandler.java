@@ -2,14 +2,20 @@ package com.doll.gacha.common.exception;
 
 import com.doll.gacha.common.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -122,18 +128,69 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * IllegalStateException 처리 (이미 삭제된 리소스 등)
+     * 지원하지 않는 HTTP 메서드 → 405 (기본 catch-all 이 500 으로 덮지 않도록 명시 처리)
      */
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException e) {
-        log.warn("IllegalStateException: {}", e.getMessage());
-
-        ErrorResponse response = ErrorResponse.of(e.getMessage(), "INVALID_STATE");
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        log.warn("Method Not Supported: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ErrorResponse.of("지원하지 않는 요청 메서드입니다: " + e.getMethod(), "METHOD_NOT_ALLOWED"));
     }
 
     /**
-     * 예상치 못한 예외 처리 (최후의 보루)
+     * 지원하지 않는 Content-Type → 415
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        log.warn("Media Type Not Supported: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ErrorResponse.of("지원하지 않는 미디어 타입입니다.", "UNSUPPORTED_MEDIA_TYPE"));
+    }
+
+    /**
+     * 멀티파트 필수 파트 누락 → 400
+     */
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException e) {
+        log.warn("Missing Part: {}", e.getRequestPartName());
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of("필수 파일/파트가 누락되었습니다: " + e.getRequestPartName(), "MISSING_PART"));
+    }
+
+    /**
+     * 존재하지 않는 경로/정적 리소스 → 404
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(NoResourceFoundException e) {
+        log.warn("No Resource: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of("요청한 경로를 찾을 수 없습니다.", "NOT_FOUND"));
+    }
+
+    /**
+     * 업로드 용량 초과 → 413
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUpload(MaxUploadSizeExceededException e) {
+        log.warn("Upload too large: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ErrorResponse.of("업로드 용량이 너무 큽니다.", "PAYLOAD_TOO_LARGE"));
+    }
+
+    /**
+     * DB 제약 위반(유니크 등) → 409. 리뷰 "하루 1회" 유니크 등 동시성 방어의 최후 방어선.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException e) {
+        log.warn("Data Integrity Violation: {}", e.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of("이미 처리되었거나 중복된 요청입니다.", "DATA_INTEGRITY_VIOLATION"));
+    }
+
+    /**
+     * 예상치 못한 예외 처리 (최후의 보루).
+     * (구 IllegalStateException → 409 매핑은 제거: 의도치 않은 내부 IllegalStateException 까지
+     *  409 로 둔갑하던 문제. 이제 예상 못한 것은 정직하게 500.)
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {

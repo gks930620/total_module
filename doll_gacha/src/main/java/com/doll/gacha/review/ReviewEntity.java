@@ -5,10 +5,15 @@ import com.doll.gacha.jwt.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reviews")
+@Table(name = "reviews", uniqueConstraints = {
+        // "하루 1회" 비즈니스 규칙을 DB 가 원자적으로 보장 (동시 요청 중복 저장 방지)
+        @UniqueConstraint(name = "uk_review_user_shop_date",
+                columnNames = {"user_id", "doll_shop_id", "review_date"})
+})
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -50,6 +55,10 @@ public class ReviewEntity {
 
     @Column
     private Integer smallDollCost;  // 소형 인형 1개당 지출
+
+    // 작성 "날짜"(연-월-일). (user_id, doll_shop_id, review_date) 유니크로 하루 1회 보장.
+    @Column(name = "review_date", nullable = false)
+    private LocalDate reviewDate;
 
 
     // 삭제 여부

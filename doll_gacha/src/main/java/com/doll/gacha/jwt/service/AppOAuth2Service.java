@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 앱 네이티브 OAuth 로그인 오케스트레이션.
@@ -30,8 +29,9 @@ public class AppOAuth2Service {
     private final RefreshService refreshService;
     private final PasswordEncoder passwordEncoder;
 
-    @Transactional
     public Map<String, String> login(String provider, String accessToken) {
+        // 외부 토큰 검증(HTTP)은 트랜잭션 밖에서 수행 — 느린 외부 호출이 DB 커넥션을 붙잡지 않도록.
+        // 이후 DB 작업은 각 repository 호출(save 등)이 자체 트랜잭션으로 처리한다.
         SocialUser socialUser = socialTokenVerifier.verify(provider, accessToken);
 
         String normalizedProvider = provider.toLowerCase();

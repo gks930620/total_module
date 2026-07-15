@@ -12,14 +12,13 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Autowired
     private UserRepository userRepository;
-    @Transactional
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        // 외부 provider userinfo 호출(super.loadUser)은 트랜잭션 밖. DB 갱신은 아래 명시적 save 로 반영한다.
         OAuth2User oAuth2User = super.loadUser(userRequest);
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         Map<String, Object> attributes = oAuth2User.getAttributes();
@@ -38,8 +37,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             userEntity = userRepository.save(extractUser);
         } else {
             // 3-2. 기존 유저: 정보 업데이트 (이메일, 닉네임 등 변경 대비)
+            //   @Transactional 제거로 dirty checking 이 안 되므로 명시적 save 로 반영한다.
             userEntity.setEmail(extractUser.getEmail());
             userEntity.setNickname(extractUser.getNickname());
+            userEntity = userRepository.save(userEntity);
         }
         UserDTO userDTO = UserDTO.from(userEntity);
         return new CustomUserAccount(userDTO, attributes);

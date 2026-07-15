@@ -1,11 +1,14 @@
 package com.doll.gacha.file.service;
 
+import com.doll.gacha.common.exception.AccessDeniedException;
 import com.doll.gacha.common.exception.EntityNotFoundException;
+import com.doll.gacha.community.repository.CommunityRepository;
 import com.doll.gacha.file.dto.FileDetailDTO;
 import com.doll.gacha.file.entity.FileEntity;
 import com.doll.gacha.file.repository.FileRepository;
 import com.doll.gacha.file.strategy.FileStorageStrategy.FileUploadResult;
 import com.doll.gacha.file.util.FileUtil;
+import com.doll.gacha.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,8 @@ public class FileService {
 
     private final FileRepository fileRepository;
     private final FileUtil fileUtil;
+    private final CommunityRepository communityRepository;
+    private final ReviewRepository reviewRepository;
 
     /**
      * 파일 경로 조회 (통합 검색 - QueryDSL 동적 쿼리)
@@ -90,18 +95,46 @@ public class FileService {
     }
 
     /**
-     * 파일 삭제 (메타데이터 + 실제 바이트 함께 삭제)
+     * 파일 삭제 (메타데이터 + 실제 바이트 함께 삭제).
+     * <b>IDOR 방지</b>: 파일이 속한 리소스(글/리뷰)의 작성자만 삭제할 수 있다.
      * @param fileId 삭제할 파일 ID
+     * @param username 요청 사용자(소유자 검증용)
      */
     @Transactional
-    public void deleteFile(Long fileId) {
+    public void deleteFile(Long fileId, String username) {
         FileEntity fileEntity = fileRepository.findById(fileId)
-                .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다: " + fileId));
+                .orElseThrow(() -> EntityNotFoundException.of("파일", fileId));
+
+        // IDOR 방지: 파일이 속한 리소스의 작성자인지 확인 (아니면 403)
+        assertDeletableBy(fileEntity, username);
 
         // 메타데이터 + 실제 바이트(버킷/디스크) 함께 삭제 (orphan 파일 방지)
         fileUtil.deleteFile(fileEntity.getFilePath());
         fileRepository.delete(fileEntity);
         log.info("파일 삭제 완료 - fileId: {}, 파일명: {}", fileId, fileEntity.getOriginalFileName());
+    }
+
+    /**
+     * 파일이 속한 리소스(글/리뷰)의 작성자인지 검증한다. 타인의 파일 삭제(IDOR)를 막는다.
+     * DOLL_SHOP/DOLL(운영 데이터) 또는 임시 업로드(refId 없음/0)는 이 엔드포인트로 삭제할 수 없다.
+     */
+    private void assertDeletableBy(FileEntity file, String username) {
+        Long refId = file.getRefId();
+        boolean owner = false;
+        if (refId != null && refId > 0 && file.getRefType() != null) {
+            owner = switch (file.getRefType()) {
+                case COMMUNITY -> communityRepository.findById(refId)
+                        .map(c -> c.isWrittenBy(username))
+                        .orElse(false);
+                case REVIEW -> reviewRepository.findById(refId)
+                        .map(r -> r.isWrittenBy(username))
+                        .orElse(false);
+                default -> false; // DOLL_SHOP, DOLL 등은 사용자 삭제 불가
+            };
+        }
+        if (!owner) {
+            throw AccessDeniedException.forDelete("파일");
+        }
     }
 
     /**

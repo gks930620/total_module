@@ -6,8 +6,12 @@ import com.doll.gacha.community.dto.CommunityCreateDTO;
 import com.doll.gacha.community.dto.CommunityDTO;
 import com.doll.gacha.community.dto.CommunityUpdateDTO;
 import com.doll.gacha.jwt.model.CustomUserAccount;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -21,6 +25,10 @@ import org.springframework.web.bind.annotation.*;
 public class CommunityController {
 
     private final CommunityService communityService;
+
+    // 운영(HTTPS)에서는 secure 쿠키. 로컬 기본 false. (application.yml app.cookie.secure)
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
 
     /**
      * 게시글 목록 조회 / 검색 (페이징)
@@ -36,12 +44,40 @@ public class CommunityController {
     }
 
     /**
-     * 게시글 상세 조회 (조회수 증가)
+     * 게시글 상세 조회 (조회수 증가 — 같은 브라우저 24시간 1회만, 쿠키 기반 dedup)
      */
     @GetMapping("/{communityId}")
-    public ResponseEntity<ApiResponse<CommunityDTO>> getCommunityDetail(@PathVariable Long communityId) {
+    public ResponseEntity<ApiResponse<CommunityDTO>> getCommunityDetail(
+            @PathVariable Long communityId,
+            HttpServletRequest request,
+            HttpServletResponse response) {
         CommunityDTO community = communityService.getCommunityDetail(communityId);
+
+        // 새로고침마다 +1 되는 것 방지: 같은 브라우저는 24시간 내 1회만 카운트(비로그인 포함).
+        // 실제 증가는 원자적 UPDATE(increaseViewCount)라 동시성에도 정확.
+        if (markViewedIfFirst(request, response, communityId)) {
+            communityService.increaseViewCount(communityId);
+        }
         return ResponseEntity.ok(ApiResponse.success("게시글 조회 성공", community));
+    }
+
+    /** 이 글을 24시간 내 처음 보는 브라우저면 조회 쿠키를 심고 true, 이미 봤으면 false. */
+    private boolean markViewedIfFirst(HttpServletRequest request, HttpServletResponse response, Long communityId) {
+        String cookieName = "cv" + communityId; // community viewed marker
+        if (request.getCookies() != null) {
+            for (Cookie c : request.getCookies()) {
+                if (cookieName.equals(c.getName())) {
+                    return false; // 이미 카운트됨
+                }
+            }
+        }
+        Cookie cookie = new Cookie(cookieName, "1");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setMaxAge(60 * 60 * 24); // 24시간
+        response.addCookie(cookie);
+        return true;
     }
 
     /**

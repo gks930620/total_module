@@ -45,17 +45,22 @@ public class CommunityService {
     }
 
     /**
-     * 게시글 상세 조회 (조회수 증가)
+     * 게시글 상세 조회. 조회수 증가는 분리됨 — 컨트롤러가 쿠키로 "하루 1회" 판정 후 increaseViewCount 호출.
      * 파일 정보는 클라이언트에서 별도 API로 조회 (/api/files?refId={id}&refType=COMMUNITY)
      */
-    @Transactional
     public CommunityDTO getCommunityDetail(Long communityId) {
         CommunityEntity community = communityRepository.findByIdAndIsDeletedFalse(communityId)
             .orElseThrow(() -> EntityNotFoundException.of("게시글", communityId));
 
-        community.incrementViewCount();
-
         return CommunityDTO.from(community, List.of(), List.of());
+    }
+
+    /**
+     * 조회수 증가 — DB 원자적 UPDATE(view_count = view_count + 1)로 lost update 방지.
+     */
+    @Transactional
+    public void increaseViewCount(Long communityId) {
+        communityRepository.increaseViewCount(communityId);
     }
 
     /**

@@ -54,6 +54,7 @@ public class ReviewCreateDTO {
                 .largeDollCost(this.largeDollCost)
                 .mediumDollCost(this.mediumDollCost)
                 .smallDollCost(this.smallDollCost)
+                .reviewDate(createdAt != null ? createdAt.toLocalDate() : java.time.LocalDate.now())
                 .createdAt(createdAt)
                 .updatedAt(createdAt)
                 .build();
