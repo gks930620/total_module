@@ -85,7 +85,13 @@ case "$APP_MODULE" in
   *) echo "APP_MODULE must be one of: businesscard_qr, doll_gacha (got: $APP_MODULE)"; exit 1 ;;
 esac
 
-exec java -Dserver.port="${PORT:-8080}" -jar "/app/${APP_MODULE}.jar"
+# JVM 메모리 상한 (비용 절감 — JVM 기본 힙은 컨테이너 RAM의 25%라 방치하면 큼).
+# 모든 모듈 공통 기본값. 특정 서비스만 조정하려면 Railway 서비스 env 로 JAVA_OPTS 를 주면 그 값이 우선한다.
+# OOM(로그 OutOfMemoryError/재시작) 시 -Xmx 를 384m→512m 로 올린다.
+JAVA_OPTS="${JAVA_OPTS:--Xmx384m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m}"
+
+# shellcheck disable=SC2086  # JAVA_OPTS 는 여러 플래그라 의도적으로 분리(word-split)
+exec java $JAVA_OPTS -Dserver.port="${PORT:-8080}" -jar "/app/${APP_MODULE}.jar"
 EOF
 RUN chmod +x /app/start.sh
 
