@@ -12,7 +12,7 @@ Railway를 열어보고 "어? 잘못한 거 아냐?" 싶을 때 먼저 볼 것:
 
 | 볼 때 드는 의문 | 답 (의도된 결정) |
 |---|---|
-| **"왜 MySQL이 1개뿐? 서비스별로 분리 안 했네?"** | **일부러 통합.** DB를 모듈마다 만들면 인스턴스 비용이 개수만큼 붙는다(각 ~$2). 대신 **MySQL 1개 안에서 database(스키마)로 분리**(`doll_gacha`,`businesscard`) → 테이블 충돌은 없애고 비용은 1개. → §4 |
+| **"왜 MySQL이 1개뿐? 서비스별로 분리 안 했네?"** | **일부러 통합.** DB를 모듈마다 만들면 인스턴스 비용이 개수만큼 붙는다(각 ~$2). 대신 **MySQL 1개 안에서 database(스키마)로 분리**(`doll_gacha`,`businesscard_qr` — **스키마명 = 모듈명**) → 테이블 충돌은 없애고 비용은 1개. → §4 |
 | **"왜 앱 첫 접속이 20~30초 느려?"** | **App Sleeping(서버리스)** 켜서. 트래픽이 거의 없어 안 쓸 땐 재워 RAM비를 0으로, 요청 오면 깨움. 콜드스타트는 그 대가. → §6 |
 | **"왜 하나의 Spring Boot로 안 합치고 서비스 여러 개?"** | 모듈러 모놀리스가 더 싸지만 **시큐리티(JWT vs OAuth2) 병합 난이도가 커서** 지금은 안 함. App Sleeping+DB통합으로 비용을 잡음. → §6 |
 | **"버킷은 왜 프로젝트별로 따로야?"** | 버킷 요금은 **개수가 아니라 총 용량(GB)** 기준이라 여러 개여도 요금 안 오름 → 격리 위해 분리가 정석. (DB와 반대) → §5 |
@@ -117,7 +117,7 @@ BUCKET_REGION=auto
 ```
 MySQL 서비스 1개 (total_mysql)
 ├─ database: doll_gacha    (user, doll_shop, ...)
-└─ database: businesscard  (user, business_card, ...)
+└─ database: businesscard_qr  (app_users, business_cards, ...)
 ```
 → `doll_gacha.user` 와 `businesscard.user`는 다른 네임스페이스 → **테이블 충돌 없음.** (예전 "DB 분리" 요구가 스키마 분리로 충족되면서 인스턴스는 1개 = 비용↓)
 
@@ -136,7 +136,7 @@ MySQL 서비스 1개 (total_mysql)
      `CREATE DATABASE IF NOT EXISTS <module> CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
 3. 저장 → 재배포. 스키마 안의 테이블은 앱이 `ddl-auto`로 생성.
 
-> 예) doll_gacha → `/doll_gacha`, businesscard → `/businesscard`. 같은 `total_mysql`, database 이름만 다름 → 인스턴스 1개, 스키마로 분리.
+> 예) doll_gacha → `/doll_gacha`, businesscard_qr → `/businesscard_qr`. **스키마명 = 모듈명**. 같은 `total_mysql`, database 이름만 다름 → 인스턴스 1개, 스키마로 분리.
 
 ---
 
@@ -219,11 +219,11 @@ mysite.com  (1개만 구매)
 - [x] doll_gacha/businesscard 설정 주석: 공통 MySQL + 스키마 분리 명시
 
 ### DB 통합 (택1)
-- **㉮ 기존 `doll_gacha_mysql` 재사용(추천)**: 거기에 `doll_gacha`·`businesscard` database 2개 생성(§4).
+- **㉮ 기존 `doll_gacha_mysql` 재사용(추천)**: 거기에 `doll_gacha`·`businesscard_qr` database 2개 생성(§4).
 - **㉯ 새 `total_mysql` 생성**: `+New→Database→MySQL` 후 database 2개.
 
 ### 적용 & 삭제
-1. 두 앱 `SPRING_DATASOURCE_URL` database를 `/doll_gacha`·`/businesscard`로
+1. 두 앱 `SPRING_DATASOURCE_URL` database를 `/doll_gacha`·`/businesscard_qr`로
 2. businesscard 정상 확인 후 → **`businesscard_qr_mysql` Delete** (㉯면 `doll_gacha_mysql`도 확인 후 Delete)
    > ⚠️ Delete는 볼륨·데이터까지 삭제. 옮길 실데이터 있으면 dump→restore 후. 지금은 없어 바로 가능.
 3. 두 앱 **App Sleeping ON** + **Hard limit $5** + 안 쓰는 서비스 Remove

@@ -8,7 +8,7 @@ spring:
       max-file-size: 10MB
       max-request-size: 50MB
   datasource:
-    # 로컬: H2 인메모리. 운영: SPRING_DATASOURCE_URL 로 공통 MySQL(total_mysql)의 database `businesscard` 지정.
+    # 로컬: H2 인메모리. 운영: SPRING_DATASOURCE_URL 로 공통 MySQL(total_mysql)의 database `businesscard_qr` 지정.
     #  → MySQL 서비스는 프로젝트 공통 1개, 모듈별 database(스키마)만 분리(비용 절감).
     #  상세: total_설계/railway_배포_및_비용.md
     url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:businesscard;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}

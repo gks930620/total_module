@@ -40,7 +40,7 @@
 
 ## 2. 버킷 만들기 (파일 저장)
 
-1. Railway → `+ New` → **Bucket** → 이름 `businesscard_bucket`
+1. Railway → `+ New` → **Bucket** → 이름 `businesscard_qr_bucket`
 2. 만든 버킷 열면 **S3-compatible Credentials** 5개 값이 보임 → **그대로 복사해둔다**(§4에서 씀):
    - Endpoint URL / Access Key ID / Secret Access Key / **Bucket Name(자동 생성된 실제 이름)** / Region
 
@@ -67,7 +67,7 @@
 APP_MODULE=businesscard_qr
 
 # DB — 공통 total_mysql 의 businesscard 스키마 (createDatabaseIfNotExist 로 스키마 자동 생성)
-SPRING_DATASOURCE_URL=jdbc:mysql://${{total_mysql.MYSQLHOST}}:${{total_mysql.MYSQLPORT}}/businesscard?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&createDatabaseIfNotExist=true
+SPRING_DATASOURCE_URL=jdbc:mysql://${{total_mysql.MYSQLHOST}}:${{total_mysql.MYSQLPORT}}/businesscard_qr?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&createDatabaseIfNotExist=true
 SPRING_DATASOURCE_USERNAME=${{total_mysql.MYSQLUSER}}
 SPRING_DATASOURCE_PASSWORD=${{total_mysql.MYSQLPASSWORD}}
 
@@ -116,8 +116,8 @@ APP_KAKAO_EXPECTED_APP_ID=<카카오 앱 ID(숫자)>
 | JWT env 이름 | `JWT_SECRET_KEY` | **`APP_JWT_SECRET`** |
 | base URL env | `APP_BASE_URL` | **`APP_PUBLIC_BASE_URL`** |
 | prod 프로파일 | `application-prod.yml` 있음 | **없음** (env로만) |
-| 버킷 | `doll_gacha_bucket` | `businesscard_bucket` |
-| DB 스키마 | `/doll_gacha` | **`/businesscard`** (같은 total_mysql) |
+| 버킷 | `doll_gacha_bucket` | `businesscard_qr_bucket` |
+| DB 스키마 | `/doll_gacha` | **`/businesscard_qr`** (같은 total_mysql) |
 
 ---
 
@@ -192,8 +192,8 @@ https://<도메인>/swagger-ui.html
 
 ## 요약 — 내가 할 일 순서
 1. (코드) **드라이버 수정분 커밋·push** ✅ 준비됨
-2. **버킷** `businesscard_bucket` 생성 → 자격증명 5개 복사
+2. **버킷** `businesscard_qr_bucket` 생성 → 자격증명 5개 복사
 3. **서비스** 생성 (repo/master/Root `/`/healthcheck `/healthz`) → **Generate Domain**
-4. **env 입력** (§4 — `APP_MODULE`, datasource `/businesscard`, `APP_JWT_SECRET`, `APP_PUBLIC_BASE_URL`, `BUCKET_*` 5개)
+4. **env 입력** (§4 — `APP_MODULE`, datasource `/businesscard_qr`, `APP_JWT_SECRET`, `APP_PUBLIC_BASE_URL`, `BUCKET_*` 5개, **`APP_KAKAO_EXPECTED_APP_ID`**)
 5. **Deploy → ①healthz ②swagger ③401 확인** → **App Sleeping ON**
 6. (나중) 앱 `BACKEND_BASE_URL` 연결 → 로그인/CRUD 확인
