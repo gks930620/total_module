@@ -18,9 +18,6 @@ public class BusinessCardUpsertRequest {
     @NotBlank(message = "full_name은 필수입니다.")
     private String fullName;
 
-    @JsonProperty("display_name")
-    private String displayName;
-
     @JsonProperty("structured_name")
     private String structuredName;
 
@@ -37,7 +34,6 @@ public class BusinessCardUpsertRequest {
                 .id(cardId)
                 .userId(userId)
                 .fullName(fullName)
-                .displayName(displayName)
                 .structuredName(structuredName)
                 .phone(phone)
                 .email(email)

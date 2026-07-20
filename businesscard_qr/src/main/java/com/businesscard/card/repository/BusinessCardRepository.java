@@ -1,8 +1,9 @@
 package com.businesscard.card.repository;
 
 import com.businesscard.card.entity.BusinessCardEntity;
-import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface BusinessCardRepository extends JpaRepository<BusinessCardEntity, String> {
 
-    List<BusinessCardEntity> findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(String userId);
+    /** 명함 목록 페이징 조회 (정렬은 Pageable 의 Sort 로 지정 — 최신 등록순) */
+    Page<BusinessCardEntity> findByUserIdAndIsActiveTrue(String userId, Pageable pageable);
 
     Optional<BusinessCardEntity> findByIdAndUserIdAndIsActiveTrue(String id, String userId);
 

@@ -18,9 +18,6 @@ public class BusinessCardResponse {
     @JsonProperty("full_name")
     private String fullName;
 
-    @JsonProperty("display_name")
-    private String displayName;
-
     @JsonProperty("structured_name")
     private String structuredName;
 
@@ -59,7 +56,6 @@ public class BusinessCardResponse {
                 .id(entity.getId())
                 .userId(entity.getUserId())
                 .fullName(entity.getFullName())
-                .displayName(entity.getDisplayName())
                 .structuredName(entity.getStructuredName())
                 .phone(entity.getPhone())
                 .email(entity.getEmail())

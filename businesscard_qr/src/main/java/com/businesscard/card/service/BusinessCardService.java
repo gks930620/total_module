@@ -12,6 +12,7 @@ import com.businesscard.card.storage.FileStorage;
 import com.businesscard.card.storage.StoredFile;
 import com.businesscard.card.support.PublicUrlResolver;
 import com.businesscard.card.util.VCardGeneratorUtil;
+import com.businesscard.common.dto.PageResponse;
 import com.businesscard.common.exception.BusinessRuleException;
 import com.businesscard.common.exception.DuplicateResourceException;
 import com.businesscard.common.exception.EntityNotFoundException;
@@ -21,11 +22,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,12 +49,21 @@ public class BusinessCardService {
     private final FileStorage fileStorage;
     private final PublicUrlResolver publicUrlResolver;
 
+    /**
+     * 명함 목록 페이징 조회 (최신 등록순).
+     * 앱은 무한스크롤로 페이지를 이어 붙이고, 등록/수정/삭제 후에는 목록 재조회 없이
+     * 자체 캐시를 갱신한다 — 목록 API 호출을 최소화하는 전략.
+     */
     @Transactional(readOnly = true)
-    public List<BusinessCardResponse> getBusinessCards(String userId) {
+    public PageResponse<BusinessCardResponse> getBusinessCards(String userId, int page, int size) {
         validateUserId(userId);
-        return businessCardRepository.findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(userId).stream()
-                .map(this::toResponse)
-                .toList();
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100); // 과도한 size 방어
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<BusinessCardResponse> result = businessCardRepository
+                .findByUserIdAndIsActiveTrue(userId, pageable)
+                .map(this::toResponse);
+        return PageResponse.from(result);
     }
 
     @Transactional(readOnly = true)

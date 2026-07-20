@@ -142,15 +142,35 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void getBusinessCards_returnsList() throws Exception {
+    void getBusinessCards_returnsPagedList() throws Exception {
         String cardId = saveCard(TEST_USER_ID, "홍길동", null);
 
         mockMvc.perform(get("/api/business-cards")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].id").value(cardId))
-                .andExpect(jsonPath("$.data[0].full_name").value("홍길동"));
+                .andExpect(jsonPath("$.data.content[0].id").value(cardId))
+                .andExpect(jsonPath("$.data.content[0].full_name").value("홍길동"))
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.last").value(true));
+    }
+
+    @Test
+    void getBusinessCards_paging_respectsPageAndSize() throws Exception {
+        // createdAt 정렬이 결정적이도록 순서대로 저장 (최신 등록순 → 나중에 저장한 카드가 먼저)
+        saveCard(TEST_USER_ID, "첫번째", null);
+        saveCard(TEST_USER_ID, "두번째", null);
+        saveCard(TEST_USER_ID, "세번째", null);
+
+        mockMvc.perform(get("/api/business-cards")
+                        .param("page", "1")
+                        .param("size", "2")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.page").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(3))
+                .andExpect(jsonPath("$.data.last").value(true));
     }
 
     @Test
@@ -174,7 +194,6 @@ class ApiIntegrationTest {
                 """
                         {
                           "full_name": "김테스트",
-                          "display_name": "테스트",
                           "phone": "010-1111-2222"
                         }
                         """.getBytes(StandardCharsets.UTF_8)
@@ -262,8 +281,7 @@ class ApiIntegrationTest {
                 MediaType.APPLICATION_JSON_VALUE,
                 """
                         {
-                          "full_name": "수정후",
-                          "display_name": "수정후"
+                          "full_name": "수정후"
                         }
                         """.getBytes(StandardCharsets.UTF_8)
         );
@@ -442,7 +460,6 @@ class ApiIntegrationTest {
                 .id(cardId)
                 .userId(userId)
                 .fullName(fullName)
-                .displayName(fullName)
                 .businessCardImagePath(imagePath)
                 .build());
         return cardId;

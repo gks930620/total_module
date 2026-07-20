@@ -1,10 +1,30 @@
+/// 명함 목록 페이징 응답 (백엔드 PageResponse 매핑 — content/last 만 사용)
+class BusinessCardPage {
+  final List<BusinessCard> cards;
+  final bool last; // 마지막 페이지 여부 (무한스크롤 종료 판단)
+
+  BusinessCardPage({required this.cards, required this.last});
+
+  factory BusinessCardPage.fromJson(Map<String, dynamic> json) {
+    final content = json['content'];
+    return BusinessCardPage(
+      cards: content is List
+          ? content
+                .whereType<Map<String, dynamic>>()
+                .map(BusinessCard.fromJson)
+                .toList()
+          : [],
+      last: json['last'] ?? true,
+    );
+  }
+}
+
 class BusinessCard {
   final String? id;
   final String? userId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String fullName;
-  final String? displayName;
   final String? structuredName;
   final String? phone;
   final String? email;
@@ -24,7 +44,6 @@ class BusinessCard {
     this.createdAt,
     this.updatedAt,
     required this.fullName,
-    this.displayName,
     this.structuredName,
     this.phone,
     this.email,
@@ -44,7 +63,6 @@ class BusinessCard {
       'id': id,
       'user_id': userId,
       'full_name': fullName,
-      'display_name': displayName,
       'structured_name': structuredName,
       'phone': phone,
       'email': email,
@@ -71,7 +89,6 @@ class BusinessCard {
           ? DateTime.parse(json['updated_at'])
           : null,
       fullName: json['full_name'] ?? '',
-      displayName: json['display_name'],
       structuredName: json['structured_name'],
       phone: json['phone'],
       email: json['email'],
@@ -93,7 +110,6 @@ class BusinessCard {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? fullName,
-    String? displayName,
     String? structuredName,
     String? phone,
     String? email,
@@ -113,7 +129,6 @@ class BusinessCard {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       fullName: fullName ?? this.fullName,
-      displayName: displayName ?? this.displayName,
       structuredName: structuredName ?? this.structuredName,
       phone: phone ?? this.phone,
       email: email ?? this.email,

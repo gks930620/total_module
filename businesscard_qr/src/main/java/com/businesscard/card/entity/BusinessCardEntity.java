@@ -41,9 +41,6 @@ public class BusinessCardEntity implements Persistable<String> {
     @Column(name = "full_name", nullable = false, length = 120)
     private String fullName;
 
-    @Column(name = "display_name", length = 120)
-    private String displayName;
-
     @Column(name = "structured_name", length = 200)
     private String structuredName;
 
@@ -100,7 +97,6 @@ public class BusinessCardEntity implements Persistable<String> {
             String id,
             String userId,
             String fullName,
-            String displayName,
             String structuredName,
             String phone,
             String email,
@@ -114,7 +110,6 @@ public class BusinessCardEntity implements Persistable<String> {
         this.id = id;
         this.userId = userId;
         this.fullName = fullName;
-        this.displayName = displayName;
         this.structuredName = structuredName;
         this.phone = phone;
         this.email = email;
@@ -130,7 +125,6 @@ public class BusinessCardEntity implements Persistable<String> {
 
     public void updateFrom(BusinessCardUpsertRequest request, String imagePath) {
         this.fullName = request.getFullName();
-        this.displayName = request.getDisplayName();
         this.structuredName = request.getStructuredName();
         this.phone = request.getPhone();
         this.email = request.getEmail();

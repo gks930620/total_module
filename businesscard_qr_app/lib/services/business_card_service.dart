@@ -20,25 +20,25 @@ class BusinessCardService {
     await _ensureBackendAccessToken(forceRefresh: true);
   }
 
-  Future<List<BusinessCard>> getAllBusinessCards() async {
+  /// 명함 목록 페이징 조회 (최신 등록순). 무한스크롤로 page 를 올려가며 이어 붙인다.
+  Future<BusinessCardPage> getBusinessCards({int page = 0, int size = 20}) async {
     final response = await _sendWithAuthRetry(
       (accessToken) => http
           .get(
-            ApiConfig.uri('/api/business-cards'),
+            ApiConfig.uri(
+              '/api/business-cards',
+              queryParameters: {'page': '$page', 'size': '$size'},
+            ),
             headers: _authorizedHeaders(accessToken),
           )
           .timeout(_requestTimeout),
     );
 
     final data = _extractData(response);
-    if (data is! List) {
-      return [];
+    if (data is! Map<String, dynamic>) {
+      throw Exception('Invalid business card list response format.');
     }
-
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map((item) => BusinessCard.fromJson(item))
-        .toList();
+    return BusinessCardPage.fromJson(data);
   }
 
   Future<BusinessCard> getBusinessCard(String id) async {
@@ -106,6 +106,7 @@ class BusinessCardService {
     return data['id'].toString();
   }
 
+  /// 명함 삭제. 성공 시 호출부가 목록 캐시에서 해당 명함만 제거한다 (목록 재조회 없음).
   Future<void> deleteBusinessCard(String id) async {
     final response = await _sendWithAuthRetry(
       (accessToken) => http

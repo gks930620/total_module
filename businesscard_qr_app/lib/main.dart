@@ -53,6 +53,7 @@ class ConfigErrorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '명함 QR코드',
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: Center(
           child: Padding(
@@ -83,6 +84,7 @@ class BusinessCardApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '명함 QR코드',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF2196F3),
@@ -294,34 +296,58 @@ class BusinessCardListScreen extends StatefulWidget {
 }
 
 class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
+  // 캐시 전략: 목록은 페이지 단위(무한스크롤)로 이어 붙여 메모리에 유지하고,
+  // 등록/수정/삭제 후에는 목록 API 재조회 없이 캐시만 갱신한 뒤 맨 위(1페이지)부터 보여준다.
+  static const int _pageSize = 20;
+
   final BusinessCardService _businessCardService = BusinessCardService();
+  final ScrollController _scrollController = ScrollController();
   List<BusinessCard> _businessCards = [];
-  bool _isLoading = true;
-  DateTime? _lastRefreshTime;
-  final List<DateTime> _refreshHistory = []; // 새로고침 이력
+  bool _isLoading = true; // 첫 페이지 로딩
+  bool _isLoadingMore = false; // 다음 페이지 로딩
+  bool _hasMore = true; // 더 가져올 페이지가 있는지
+  int _nextPage = 0; // 다음에 요청할 페이지 번호
 
   @override
   void initState() {
     super.initState();
-    _loadBusinessCards();
+    _scrollController.addListener(_onScroll);
+    _loadFirstPage();
   }
 
-  Future<void> _loadBusinessCards() async {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    // 바닥 근처(200px)에 오면 다음 페이지 로드
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadNextPage();
+    }
+  }
+
+  /// 첫 페이지 로드(진입 시 1회). 당겨서 새로고침 시에도 여기로 리셋된다.
+  Future<void> _loadFirstPage() async {
     try {
-      print('[UI] 명함 목록 로딩 시작');
-      final cards = await _businessCardService.getAllBusinessCards();
-      print('[UI] 명함 목록 로딩 성공: ${cards.length}개');
+      print('[UI] 명함 목록 1페이지 로딩 시작');
+      final page = await _businessCardService.getBusinessCards(
+        page: 0,
+        size: _pageSize,
+      );
       if (!mounted) return;
       setState(() {
-        _businessCards = cards;
+        _businessCards = page.cards;
+        _hasMore = !page.last;
+        _nextPage = 1;
         _isLoading = false;
       });
-      print('[UI] UI 상태 업데이트 완료');
-    } catch (e, stackTrace) {
-      print('[UI] === 명함 목록 로딩 에러 ===');
-      print('[UI] 에러: $e');
-      print('[UI] 스택트레이스: $stackTrace');
-      print('[UI] ========================');
+      print('[UI] 1페이지 로딩 성공: ${page.cards.length}개 (hasMore=$_hasMore)');
+    } catch (e) {
+      print('[UI] 명함 목록 로딩 에러: $e');
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -329,6 +355,39 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('명함을 불러오는데 실패했습니다: $e')));
+    }
+  }
+
+  /// 스크롤이 바닥에 닿으면 다음 페이지를 이어 붙인다.
+  Future<void> _loadNextPage() async {
+    setState(() {
+      _isLoadingMore = true;
+    });
+    try {
+      final page = await _businessCardService.getBusinessCards(
+        page: _nextPage,
+        size: _pageSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        _businessCards.addAll(page.cards);
+        _hasMore = !page.last;
+        _nextPage += 1;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      print('[UI] 다음 페이지 로딩 에러: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoadingMore = false; // 실패해도 스크롤 재시도 가능
+      });
+    }
+  }
+
+  /// 등록/수정/삭제 후 캐시 기준으로 목록 맨 위(1페이지)부터 보여준다.
+  void _showFromFirstPage() {
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
     }
   }
 
@@ -387,50 +446,8 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
               }
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              final now = DateTime.now();
-
-              // 1분 쿨다운 체크
-              if (_lastRefreshTime != null &&
-                  now.difference(_lastRefreshTime!).inSeconds < 60) {
-                final remaining =
-                    60 - now.difference(_lastRefreshTime!).inSeconds;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${remaining}초 후 다시 시도해주세요'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-                return;
-              }
-
-              // 1시간 이내 새로고침 이력 정리 (1시간 지난 것 제거)
-              _refreshHistory.removeWhere(
-                (time) => now.difference(time).inHours >= 1,
-              );
-
-              // 1시간에 10번 제한 체크
-              if (_refreshHistory.length >= 10) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('새로고침 제한 횟수를 초과했습니다 (1시간에 10번)'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                return;
-              }
-
-              // 새로고침 실행
-              _lastRefreshTime = now;
-              _refreshHistory.add(now);
-              setState(() {
-                _isLoading = true;
-              });
-              _loadBusinessCards();
-            },
-          ),
+          // 새로고침 버튼 없음(의도): 목록은 진입 시 1회 로드 후 메모리 유지하고,
+          // 등록/수정/삭제 결과가 돌아올 때만 갱신한다 (서버 재조회 최소화).
         ],
       ),
       body: Padding(
@@ -449,20 +466,21 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                   );
                   if (!mounted) return;
                   if (result is String) {
-                    // 새로 등록된 명함 ID를 받아서 해당 명함만 조회 후 리스트에 추가
+                    // 추가: 등록 API 성공 후 새 명함만 조회해 캐시 최상단에 추가 (목록 재조회 없음)
                     try {
                       final newCard = await _businessCardService
                           .getBusinessCard(result);
                       if (!mounted) return;
                       setState(() {
-                        _businessCards.insert(0, newCard); // 최상단에 추가
+                        _businessCards.insert(0, newCard);
                       });
+                      _showFromFirstPage(); // 1페이지(맨 위)부터 보여주기
                     } catch (e) {
                       print('[목록] 새 명함 조회 실패: $e');
-                      _loadBusinessCards(); // 실패 시 전체 새로고침
+                      _loadFirstPage(); // 실패 시 폴백: 1페이지 재조회
                     }
                   } else if (result == true) {
-                    _loadBusinessCards(); // 폴백
+                    _loadFirstPage(); // 폴백
                   }
                 },
                 icon: const Icon(Icons.add),
@@ -495,13 +513,22 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: _loadBusinessCards,
+                      onRefresh: _loadFirstPage,
                       child: ListView.builder(
-                        itemCount: _businessCards.length,
+                        controller: _scrollController,
+                        // 더 가져올 페이지가 있으면 마지막에 로딩 행 1개 추가
+                        itemCount: _businessCards.length + (_hasMore ? 1 : 0),
                         padding: const EdgeInsets.only(
                           bottom: 80,
                         ), // 네비게이션 바 여백
                         itemBuilder: (context, index) {
+                          // 무한스크롤 로딩 행
+                          if (index >= _businessCards.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
                           final card = _businessCards[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -518,7 +545,7 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                                 );
                                 if (!mounted) return;
                                 if (result is BusinessCard) {
-                                  // 수정된 명함 데이터를 받아서 해당 항목만 업데이트
+                                  // 수정: 수정 API 성공 후 해당 명함만 캐시에서 교체 (목록 재조회 없음)
                                   setState(() {
                                     final index = _businessCards.indexWhere(
                                       (c) => c.id == result.id,
@@ -527,8 +554,18 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                                       _businessCards[index] = result;
                                     }
                                   });
+                                  _showFromFirstPage();
+                                } else if (result is Map &&
+                                    result['deletedId'] is String) {
+                                  // 삭제: 삭제 API 성공 후 해당 명함만 캐시에서 제거 (목록 재조회 없음)
+                                  setState(() {
+                                    _businessCards.removeWhere(
+                                      (c) => c.id == result['deletedId'],
+                                    );
+                                  });
+                                  _showFromFirstPage();
                                 } else if (result == true) {
-                                  _loadBusinessCards(); // 전체 새로고침 (폴백)
+                                  _loadFirstPage(); // 전체 새로고침 (폴백)
                                 }
                               },
                               child: Container(
@@ -538,7 +575,7 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    card.displayName ?? card.fullName,
+                                    card.fullName,
                                     style: const TextStyle(
                                       fontSize:
                                           22.4, // 16 * 1.4 = 22.4 (40% 증가)
@@ -572,7 +609,6 @@ class BusinessCardFormScreen extends StatefulWidget {
 class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fnController = TextEditingController();
-  final _displayNameController = TextEditingController();
   final _orgController = TextEditingController();
   final _titleController = TextEditingController();
   final _telController = TextEditingController();
@@ -599,7 +635,6 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
   void _loadExistingData() {
     final card = widget.businessCard!;
     _fnController.text = card.fullName;
-    _displayNameController.text = card.displayName ?? '';
     _orgController.text = card.organization ?? '';
     _titleController.text = card.title ?? '';
     _telController.text = card.phone ?? '';
@@ -612,7 +647,6 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
   @override
   void dispose() {
     _fnController.dispose();
-    _displayNameController.dispose();
     _orgController.dispose();
     _titleController.dispose();
     _telController.dispose();
@@ -731,13 +765,6 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _displayNameController,
-                label: '표시명 (앱에서 보여질 이름)',
-                hint: '홍길동(직장용), 홍길동의 취미용',
-                helperText: '비워두면 성명이 표시명으로 사용됩니다',
-              ),
 
               _buildTextField(
                 controller: _fnController,
@@ -928,9 +955,6 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
         final businessCard = BusinessCard(
           id: _isEditMode ? widget.businessCard!.id : null,
           fullName: _fnController.text,
-          displayName: _displayNameController.text.isNotEmpty
-              ? _displayNameController.text
-              : null,
           phone: _telController.text.isNotEmpty ? _telController.text : null,
           email: _emailController.text.isNotEmpty
               ? _emailController.text
@@ -1150,7 +1174,7 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(card.displayName ?? card.fullName),
+        title: Text(card.fullName),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -1194,6 +1218,45 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
                     context,
                   ).showSnackBar(SnackBar(content: Text('데이터 새로고침 실패: $e')));
                 }
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('명함 삭제'),
+                  content: Text('\'${card.fullName}\' 명함을 삭제하시겠습니까?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('취소'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        '삭제',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm != true || !context.mounted) return;
+
+              try {
+                // 삭제 API 성공 후 목록 화면이 캐시에서 이 명함만 제거한다 (목록 재조회 없음)
+                await _businessCardService.deleteBusinessCard(card.id!);
+                if (!context.mounted) return;
+                Navigator.pop(context, {'deletedId': card.id});
+              } catch (e) {
+                print('[View] 명함 삭제 실패: $e');
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('명함 삭제 실패: $e')));
               }
             },
           ),
@@ -1262,8 +1325,6 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
 
             // 기본 정보
             _buildInfoSection('기본 정보', [
-              if (card.displayName != null)
-                _buildInfoItem('표시명', card.displayName!),
               if (card.fullName.isNotEmpty) _buildInfoItem('성명', card.fullName),
             ]),
 

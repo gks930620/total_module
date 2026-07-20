@@ -6,8 +6,8 @@ import com.businesscard.card.dto.DownloadUrlResponse;
 import com.businesscard.card.service.BusinessCardService;
 import com.businesscard.card.service.DownloadFile;
 import com.businesscard.common.dto.ApiResponse;
+import com.businesscard.common.dto.PageResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -32,9 +32,15 @@ public class BusinessCardController {
 
     private final BusinessCardService businessCardService;
 
+    /** 명함 목록 페이징 조회 (최신 등록순). 앱 무한스크롤용 — content/last 를 보고 다음 페이지를 이어 요청한다. */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BusinessCardResponse>>> getBusinessCards(Authentication authentication) {
-        List<BusinessCardResponse> data = businessCardService.getBusinessCards(authentication.getName());
+    public ResponseEntity<ApiResponse<PageResponse<BusinessCardResponse>>> getBusinessCards(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        PageResponse<BusinessCardResponse> data =
+                businessCardService.getBusinessCards(authentication.getName(), page, size);
         return ResponseEntity.ok(ApiResponse.success("Business card list loaded", data));
     }
 
