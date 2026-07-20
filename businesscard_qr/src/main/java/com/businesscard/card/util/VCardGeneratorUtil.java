@@ -46,7 +46,10 @@ public class VCardGeneratorUtil {
         }
         lines.add("END:VCARD");
 
-        return String.join("\n", lines);
+        // vCard 규격(RFC 2426/6350)은 줄 끝을 CRLF(\r\n)로 강제한다.
+        // LF만 쓰면 접힌 줄(PHOTO folding) 복원이 "CRLF+공백" 기준인 엄격한 파서
+        // (삼성 연락처 등)에서 파싱이 깨져 "다운로드는 되는데 연락처 저장이 안 되는" 증상이 난다.
+        return String.join("\r\n", lines) + "\r\n";
     }
 
     private List<String> buildPhotoLines(String photoType, String base64Photo) {
