@@ -45,6 +45,38 @@
 
 ---
 
+## 2-1. 배포·운영 현황 (2026-07-21 기준) ⭐ 세션 이어받을 때 여기부터
+
+### 배포 상태
+- **businesscard_qr 백엔드 = Railway 배포 완료 + 검증됨.** `GET /healthz` UP, `/swagger-ui.html` 열림, 인증 API 토큰 없이 호출 시 401 — 정상.
+- 서비스 공개 도메인: `https://businesscardqr-production.up.railway.app` (앱 `.env`의 `BACKEND_BASE_URL` = 서버 `APP_PUBLIC_BASE_URL` = 이 값, 셋 일치 확인됨).
+- 버킷 `businesscard_qr_bucket`(region sjc) 생성·자격증명 발급 완료 → 서버 env `BUCKET_*`에 실제 값 입력됨.
+  - (참고: 버킷 자격증명 생성이 한동안 "unexpected error"로 실패했는데 **Railway 플랫폼 문제**였고 이후 해결됨.)
+- **비밀값(JWT_SECRET, 버킷 SECRET_ACCESS_KEY)은 Railway env에만 있음 — 절대 커밋 금지.** `.env`도 gitignore.
+- Railway CLI 설치·링크됨(`railway` v5.26.1, project total_module / env production). 로그 확인: `railway logs -s businesscard_qr -d --lines 50`.
+
+### 카카오 로그인 운영지식 ⭐ (문서 없으면 반드시 다시 헤맴)
+- **앱 ID = `1315157`** (숫자). 서버 env `APP_KAKAO_EXPECTED_APP_ID`에 설정 → **미설정 시 부팅 차단**(우리가 fail-fast로 강제함). 앱 ID는 공개값이라 노출 무방.
+- 앱은 **네이티브 앱 키**(`.env`의 `KAKAO_NATIVE_APP_KEY`)로 로그인, 서버는 **앱 ID**로 토큰 검증 — 둘은 같은 카카오 앱(1315157)의 다른 값.
+- **키 해시(Key Hash) 등록 필수** — 안 하면 로그인 시 `misconfigured / Android keyHash validation failed`.
+  - 키 해시는 **코드에 없다.** 앱을 서명한 keystore에서 계산되는 값 → **카카오 개발자센터 → 앱(1315157) → 플랫폼 Android**에 등록만 하면 됨.
+  - 패키지명: `com.example.businesscard_qr`
+  - **현재 등록된 것 = 디버그 키 해시** `MXElJ76jlbtx+1sVEPo04ud1Mhk=` (이 PC의 `~/.android/debug.keystore` 기준).
+  - ⚠️ **키 해시는 빌드 서명마다 다르다** — 다른 PC에서 빌드하거나 **릴리스 APK로 배포하면 그 keystore의 키 해시를 새로 뽑아 카카오에 추가**해야 함. (릴리스 배포 시 꼭 기억)
+  - 디버그 키 해시 재계산(openssl 없이):
+    ```powershell
+    $ks="$env:USERPROFILE\.android\debug.keystore"; $kt="C:\Users\gks93\.jdks\corretto-17.0.19\bin\keytool.exe"
+    $sha1=(( & $kt -list -v -alias androiddebugkey -keystore $ks -storepass android -keypass android | Select-String 'SHA1:') -replace '.*SHA1:\s*','') -replace '[^0-9A-Fa-f]',''
+    $b=for($i=0;$i -lt $sha1.Length;$i+=2){[Convert]::ToByte($sha1.Substring($i,2),16)}; [Convert]::ToBase64String([byte[]]$b)
+    ```
+
+### 아직 안 한 것 (pending)
+- [ ] 폰에서 **vCard 연락처 저장**(CRLF 수정 후 — 예전 받아둔 vcf는 LF라 **새 QR로** 테스트), **목록 페이징**(20개↑ 무한스크롤), **명함 삭제** 재확인
+- [ ] Railway DB의 `business_cards.display_name` 컬럼 수동 DROP (§2 참고, DBeaver)
+- [ ] (릴리스 배포 시) 릴리스 키 해시 카카오 등록 + swagger 접근 제한(배포가이드 §9)
+
+---
+
 ## 3. 같은 날 같이 반영된 것 (참고)
 
 - **vCard 줄바꿈 CRLF 수정**(`08ffd92`) — vcf 다운로드 후 연락처 저장 안 되던 문제의 유력 원인 수정. **폰에서 새 QR로 재테스트 필요** (예전에 받아둔 vcf는 여전히 LF 파일).
