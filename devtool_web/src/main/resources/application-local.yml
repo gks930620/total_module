@@ -1,0 +1,19 @@
+# 로컬 개발 전용 프로파일.
+# application.yml 의 `spring.profiles.default: local` 덕분에 프로파일을 지정하지 않으면 이 파일이 자동으로 적용된다.
+# 운영(prod)에는 영향이 없다 — Railway 는 SPRING_PROFILES_ACTIVE=prod 로 뜨고 PORT 를 직접 주입한다.
+
+server:
+  # 로컬은 항상 8082 로 뜬다. 이 포트는 사용자가 다른 프로젝트와 겹치지 않게 직접 관리한다.
+  # ${PORT:...} 를 쓰지 않는 이유: 환경에 PORT 가 남아 있으면 조용히 다른 포트로 떠 버린다.
+  #   → 로컬에서만큼은 "항상 8082" 를 보장하려고 고정값으로 둔다.
+  port: 8082
+
+logging:
+  level:
+    com.test.test: debug
+
+
+
+
+
+

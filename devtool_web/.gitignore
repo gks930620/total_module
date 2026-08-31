@@ -1,0 +1,126 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+logs/
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs
+hs_err_pid*
+replay_pid*
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Maven ###
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Gradle ###
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### Application properties with sensitive data ###
+application-local.yml
+application-local.properties
+application-secret.yml
+application-secret.properties
+
+# 예외: 이 프로젝트의 application-local.yml 은 비밀값이 없다(로컬 포트 8082 + 로그 레벨뿐).
+# 커밋해야 클론한 환경에서도 "항상 8082" 가 유지된다.
+# ⚠️ 이 파일에 비밀값(비밀번호·API 키 등)을 넣게 되면 이 예외를 즉시 되돌릴 것.
+!src/main/resources/application-local.yml
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### etc ###
+*.swp
+*.swo
+*~
+.env
+
+
+# 환경변수 파일
+.env
+.env.local
+.env.*.local
+
+# API 키가 포함된 설정 파일
+*-secret.*
+*-private.*
+# application-prod.yml은 환경변수로 처리되므로 커밋 가능
+application-prod.properties
+
+/uploads/
+
+# React frontend
+frontend/node_modules/
+frontend/dist/
+
+# SPA 빌드 산출물(static)은 "커밋"한다 — node 없는 Docker 빌드가 이 커밋된 번들을 그대로 사용(설계 §4).
+# 로컬(node 존재)에서는 Gradle 이 frontend/dist 로부터 재생성하며, 프론트 변경 시 이 디렉터리를 함께 커밋한다.
+# (따라서 예전처럼 src/main/resources/static/* 를 무시하지 않는다.)
+
+# 사용자 개인 메모 — 저장소에 남길 내용이 아니다
+my참고.txt
+
+# 루트에서 npx 실행 시 생기는 캐시 — 커밋 금지 (frontend/node_modules 와 별개)
+node_modules/

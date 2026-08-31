@@ -14,3 +14,5 @@ businesscard_qr_app
 doll_gacha/logs
 doll_gacha/data
 doll_gacha/frontend/dist
+devtool_web/logs
+devtool_web/frontend/dist

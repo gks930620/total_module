@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 배포 시 <loc>를 실제 도메인 절대 URL로 치환할 것 (예: https://example.com/json) -->
+<!-- 도구 목록의 단일 출처는 frontend/src/lib/tools.js — 도구를 추가하면 여기도 함께 고칠 것 -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+
+  <!-- 데이터 · 포맷 -->
+  <url><loc>/viewer</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/json</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/convert</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/yaml</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/dummy</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/csv</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/json-to-type</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
+  <!-- 인코딩 · 보안 -->
+  <url><loc>/base64</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/jwt</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/hash</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/uuid</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
+  <url><loc>/escape</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- 텍스트 -->
+  <url><loc>/regex</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/diff</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/case</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/text</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/unicode</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/char-count</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/line-fix</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/list-compare</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- 이미지 · 문서 -->
+  <url><loc>/image</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/image-privacy</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/image-merge</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/favicon</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/pdf</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+
+  <!-- 계산 · 변환 -->
+  <url><loc>/timestamp</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/cron</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/number-base</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/bytes</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/color</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- 웹 · 네트워크 -->
+  <url><loc>/url</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/cidr</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>/qr</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/curl</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/utm</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- 생활 · 업무 -->
+
+  <!-- 다이어그램 -->
+  <url><loc>/erd</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/class-diagram</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>/sequence</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/flowchart</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/state-diagram</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/diagram</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
+</urlset>

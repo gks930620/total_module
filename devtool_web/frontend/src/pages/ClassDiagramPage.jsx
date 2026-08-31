@@ -1,0 +1,47 @@
+// class-diagram — 화면은 components/DiagramTool.jsx 하나를 함께 쓴다.
+// 종류마다 페이지를 따로 두는 이유는 검색이다("ERD 그리기" 와 "시퀀스 다이어그램" 은 다른 검색어).
+import { DiagramTool } from "../components/DiagramTool.jsx";
+import { getToolBySlug } from "../lib/tools.js";
+
+const tool = getToolBySlug("class-diagram");
+
+const GUIDE = {
+  intro: "자바 소스를 왼쪽에 붙여넣고 '그림으로 만들기' 를 누르면 클래스·인터페이스·enum·record 와 상속·구현·연관 관계를 읽어 그립니다. 여러 클래스를 한 번에 붙여넣으면 클래스 사이의 선까지 이어집니다.",
+  screen: {
+    layout: "split",
+    left: { head: "자바 소스 붙여넣기 / 직접 쓰기", body: "여러 클래스를 한 번에", action: "그림으로 만들기" },
+    right: { head: "미리보기", body: "확대·축소 · SVG 저장 · PNG 저장" },
+    caption: "읽어낸 클래스 수와 이은 관계 수를 왼쪽 아래에서 알려 줍니다.",
+  },
+  example: {
+    in: `@Entity
+public class Member {
+    @Id private Long id;
+    @OneToMany private List<Order> orders;
+}`,
+    out: `Member ──1 : N──> Order
+  - id : Long     (PK)
+  - orders : List<Order>`,
+    outLabel: "나오는 그림",
+  },
+  notes: [
+    "'그리기' 탭에서는 문법 없이 마우스로 직접 그립니다 — 상자를 놓고, 오른쪽 점을 끌어 연결하고, 내용은 옆 패널에서 고칩니다. 그림은 이 브라우저에 자동 저장되고 SVG·PNG·JSON 으로 내보낼 수 있습니다.",
+    "코드에서 읽은 결과는 '그리기로 보내기' 로 캔버스에 옮겨 손으로 이어서 편집할 수 있습니다.",
+    "@OneToMany · @ManyToOne · @OneToOne · @ManyToMany 를 찾아 방향과 개수(1·N)를 화살표에 붙입니다. @Id 는 PK 로, @Column(nullable=false, unique=true) 도 함께 읽습니다.",
+    "List<Order> 같은 필드는 알맹이 타입(Order)으로 선을 잇습니다 — List 로 이으면 의미가 없기 때문입니다.",
+    "String·Long·LocalDateTime 같은 기본 타입과 표준 라이브러리로는 선을 만들지 않습니다. 안 그러면 String 상자가 그림 한가운데 생깁니다.",
+    "메서드는 접근 제어자(+ public · - private · # protected)와 반환 타입까지 나옵니다. 필요 없으면 오른쪽 문법에서 그 줄을 지우세요.",
+    "BaseEntity 처럼 소스에 없는 부모 클래스도 그립니다 — '어디서 상속받았는지' 자체가 정보이기 때문입니다.",
+  ],
+};
+
+export function ClassDiagramPage() {
+  return (
+    <DiagramTool
+      tool={tool}
+      type="class"
+      guide={GUIDE}
+      intro="자바 파일을 그대로 붙여넣으면 클래스·인터페이스·enum 과 상속·구현·연관 관계를 읽어 그립니다."
+    />
+  );
+}

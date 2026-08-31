@@ -45,6 +45,7 @@ DB:   공통 MySQL 1개(total_mysql) + 모듈별 스키마(=database) 분리, �
   ├── build.gradle      # 공통 규칙 (거의 비어있음)
   ├── /businesscard_qr      # [모듈] 명함 QR API (Spring Boot)
   ├── /doll_gacha           # [모듈] 인형뽑기 (Spring Boot + React 정적 서빙)
+  ├── /devtool_web          # [모듈] 개발자 웹 도구 모음 (Spring Boot + React 정적 서빙 — 서버 API·DB·버킷 없음)
   ├── /businesscard_qr_app  # Flutter 앱 — Gradle 멤버 아님(같이 두는 별개 프로젝트)
   ├── /total_설계            # 전체 설계 문서 (이 스킬들의 사람용 원본)
   ├── /오류해결 · /기억할거     # 작업 기록 · 모듈별 기억 메모

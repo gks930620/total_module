@@ -2,3 +2,4 @@ rootProject.name = 'total_module'
 
 include 'businesscard_qr'
 include 'doll_gacha'
+include 'devtool_web'

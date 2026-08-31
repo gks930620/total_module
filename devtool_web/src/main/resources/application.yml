@@ -1,0 +1,41 @@
+# 공통 설정. 로컬은 application-local.yml, 운영은 application-prod.yml 이 덮어쓴다.
+#
+# 이 서비스에는 서버 API 도 데이터베이스도 없다. 백엔드는 SPA 정적 서빙 + /healthz 만 담당한다.
+# 도구 46종은 전부 브라우저 안에서 동작한다(NFR-02).
+
+dotenv:
+  enabled: true # .env 파일 로드 (APP_PUBLIC_BASE_URL)
+
+server:
+  # 로컬은 application-local.yml 이 8082 로 고정, 운영은 Railway 가 PORT 를 주입한다.
+  port: ${PORT:8080}
+  # Railway/로드밸런서 뒤에서 X-Forwarded-* 를 신뢰해 https/host 를 정확히 인식한다.
+  forward-headers-strategy: framework
+
+spring:
+  # 프로파일을 지정하지 않으면 local 로 뜬다.
+  profiles:
+    default: local
+
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      enabled: true
+
+logging:
+  level:
+    com.test.test: info
+
+app:
+  # 절대 URL 조립 기준. 운영에서 미설정이거나 localhost 면 RailwayDeploymentValidator 가 기동을 막는다.
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when_authorized

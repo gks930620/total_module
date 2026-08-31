@@ -1,0 +1,30 @@
+# 운영(Railway) 전용 프로파일. SPRING_PROFILES_ACTIVE=prod 로 활성화된다.
+
+server:
+  # Railway 가 주입하는 PORT 로 리슨해야 한다. 미주입 시(로컬 prod 테스트) 8080.
+  port: ${PORT:8080}
+
+spring:
+  devtools:
+    livereload:
+      enabled: false
+    restart:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.test.test: INFO
+
+app:
+  # 자기 공개 도메인. 미설정이거나 localhost 면 RailwayDeploymentValidator 가 fail-fast 로 죽인다.
+  public-base-url: ${APP_PUBLIC_BASE_URL:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: when_authorized

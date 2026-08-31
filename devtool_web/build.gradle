@@ -1,0 +1,100 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.3.4'
+	id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.test'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// 이 서비스는 서버 API 도 데이터베이스도 없다. 백엔드는 SPA 정적 서빙 + /healthz 만 담당한다.
+	// 그래서 의존성은 최소한만 둔다 — 안 쓰는 스타터는 넣지 않는다(코드컨벤션 §4 죽은 코드 금지).
+	// 저장 기능이 생기면 spring-boot-starter-data-jpa + 드라이버를, REST API 가 생기면
+	// spring-boot-starter-validation 을 그때 다시 추가할 것.
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// 경로 화이트리스트 + 보안 헤더용 (로그인/JWT/OAuth2 는 이 앱에 없음)
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	// .env 파일 읽기용 (APP_PUBLIC_BASE_URL)
+	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+
+	// Actuator (배포 헬스체크 보조)
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def frontendDir = file("${projectDir}/frontend")
+def frontendBuildDir = file("${frontendDir}/dist")
+def staticDir = file("${projectDir}/src/main/resources/static")
+def npmExecutable = org.gradle.internal.os.OperatingSystem.current().isWindows() ? "npm.cmd" : "npm"
+
+// 환경 무관 빌드 가드(설계 §4·§6):
+// node/npm 이 PATH 에 있을 때만 프론트를 빌드한다. node 없는 Docker 빌드 환경에서는
+// 커밋된 static 산출물(src/main/resources/static)을 그대로 사용 → 이미지 빌드가 깨지지 않는다.
+def npmAvailable = {
+	def path = System.getenv("PATH")
+	if (path == null) return false
+	return path.split(File.pathSeparator).any { dir -> new File(dir, npmExecutable).isFile() }
+}()
+
+def frontendBuildable = frontendDir.exists() && npmAvailable
+
+tasks.register("frontendInstall", Exec) {
+	workingDir frontendDir
+	commandLine npmExecutable, "ci"
+	onlyIf { frontendBuildable }
+}
+
+tasks.register("frontendBuild", Exec) {
+	dependsOn "frontendInstall"
+	workingDir frontendDir
+	commandLine npmExecutable, "run", "build"
+	onlyIf { frontendBuildable }
+}
+
+// npm 이 있을 때만 static 을 비운다 → node 없는 환경에서 커밋된 산출물이 삭제되는 사고 방지.
+tasks.register("cleanFrontendStatic", Delete) {
+	onlyIf { frontendBuildable }
+	delete fileTree(staticDir) {
+		exclude ".gitkeep"
+	}
+}
+
+tasks.register("copyFrontendBuild", Copy) {
+	dependsOn "frontendBuild", "cleanFrontendStatic"
+	from frontendBuildDir
+	into staticDir
+	onlyIf { frontendBuildable }
+}
+
+tasks.named("processResources") {
+	dependsOn "copyFrontendBuild"
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

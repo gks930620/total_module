@@ -7,15 +7,16 @@ Flutter 앱 + Spring Boot 백엔드 + React 웹으로 이루어져 있고,
 ## 제품 개요
 
 - **무엇을 만드나**: 검증된 개인 사이드 프로젝트들을 모아 Railway 하나로 저비용 운영하는 통합 저장소.
-  현재 입주 프로젝트: **businesscard_qr**(명함을 QR로 공유하는 앱+API), **doll_gacha**(인형뽑기 가게 지도·리뷰·커뮤니티 웹).
+  현재 입주 프로젝트: **businesscard_qr**(명함을 QR로 공유하는 앱+API), **doll_gacha**(인형뽑기 가게 지도·리뷰·커뮤니티 웹),
+  **devtool_web**(개발자 웹 도구 모음 — 서버 API·DB 없이 전부 브라우저에서 동작, 스프링은 SPA 정적 서빙만).
 - **사용자는 누구인가**: 개발자 본인 + 지인/소규모 일반 사용자 (트래픽 거의 없음 — 비용 최적화가 중요).
 
 ## 스택 / 저장소 구조
 
 | 영역 | 스택 | 경로 | 테스트 명령 |
 |---|---|---|---|
-| 백엔드 | Spring Boot 3.3 / Java 17 (Gradle 멀티모듈) | `businesscard_qr/`, `doll_gacha/` (모듈 = Railway 서비스) | `.\gradlew.bat --no-daemon :<모듈>:test` ⚠️ 아래 JAVA_HOME 필수 |
-| 웹 | React (JS, Vite) — doll_gacha 에 내장(스프링이 정적 서빙) | `doll_gacha/frontend/` | `.\gradlew.bat :doll_gacha:npmBuild` (vite build. 별도 npm test 없음) |
+| 백엔드 | Spring Boot 3.3 / Java 17 (Gradle 멀티모듈) | `businesscard_qr/`, `doll_gacha/`, `devtool_web/` (모듈 = Railway 서비스) | `.\gradlew.bat --no-daemon :<모듈>:test` ⚠️ 아래 JAVA_HOME 필수 |
+| 웹 | React (JS, Vite) — doll_gacha·devtool_web 에 내장(스프링이 정적 서빙) | `doll_gacha/frontend/`, `devtool_web/frontend/` | `.\gradlew.bat :doll_gacha:npmBuild` / devtool_web 은 `cd devtool_web/frontend && npm test -- --run` |
 | 앱 | Flutter (Dart) — Gradle 멤버 아님, APK 별도 배포 | `businesscard_qr_app/` | `flutter analyze` (SDK: `C:\Users\gks93\tools\flutter`) |
 | 배포 | Railway | 절차: `.claude/skills/railway-deploy/SKILL.md` | — |
 

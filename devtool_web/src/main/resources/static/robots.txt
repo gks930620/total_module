@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# ⚠️ Sitemap 지시자는 절대 URL 이어야 검색엔진이 받아들인다.
+#    도메인 확정 후 아래 줄을 https://실제도메인/sitemap.xml 로 교체할 것.
+#    (sitemap.xml 안의 <loc> 53개도 함께 절대 URL 로 치환 — 절차는 railway-deploy 스킬)
+Sitemap: /sitemap.xml
