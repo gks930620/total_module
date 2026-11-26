@@ -1,0 +1,6 @@
+/* 홈 화면 아이콘 아래에 뜨는 이름 */
+"CFBundleDisplayName" = "Businesscard QR";
+
+/* image_picker 권한 요청 문구 */
+"NSPhotoLibraryUsageDescription" = "名刺に使う写真を選ぶため、写真へのアクセスが必要です。";
+"NSCameraUsageDescription" = "名刺に使う写真を撮影するため、カメラへのアクセスが必要です。";

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 기본(한국어 외 모든 언어)의 앱 이름. 홈 화면 아이콘 아래와 앱 정보에 쓰인다.
+     스토어 노출명(Play Console / App Store Connect)은 여기가 아니라 콘솔에서 따로 정한다. -->
+<resources>
+    <string name="app_name">Businesscard QR</string>
+</resources>

@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
+import 'dart:async';
 import 'dart:io';
+import 'l10n/app_localizations.dart';
+import 'core/app_error_text.dart';
+import 'core/theme/halo_theme.dart';
+import 'core/theme/halo_flourish.dart';
+import 'core/widgets/halo_buttons.dart';
+import 'core/widgets/halo_card.dart';
+import 'core/widgets/halo_field.dart';
+import 'core/widgets/halo_scaffold.dart';
 import 'models/business_card.dart';
+import 'models/entitlement.dart';
+import 'screens/pro_screen.dart';
+import 'services/account_service.dart';
+import 'services/api_client.dart';
+import 'services/billing_service.dart';
 import 'services/business_card_service.dart';
 import 'services/image_cache_service.dart';
 
@@ -29,11 +44,7 @@ void main() async {
 
   if (kakaoNativeAppKey == null || kakaoNativeAppKey.isEmpty) {
     // 설정 누락 시 크래시 대신 에러 화면 표시
-    runApp(
-      const ConfigErrorApp(
-        message: 'KAKAO_NATIVE_APP_KEY가 설정되지 않았습니다 (.env 확인)',
-      ),
-    );
+    runApp(const ConfigErrorApp());
     return;
   }
 
@@ -43,35 +54,74 @@ void main() async {
   runApp(const BusinessCardApp());
 }
 
+/// 다국어 배선 — 두 MaterialApp 이 같은 설정을 쓰도록 한 곳에 모은다.
+/// 지원 언어는 lib/l10n/*.arb 가 결정한다(AppLocalizations.supportedLocales).
+const _localizationsDelegates = <LocalizationsDelegate<Object>>[
+  AppLocalizations.delegate,
+  GlobalMaterialLocalizations.delegate,
+  GlobalWidgetsLocalizations.delegate,
+  GlobalCupertinoLocalizations.delegate,
+];
+
 /// 필수 설정이 없을 때 크래시 대신 보여주는 간단한 에러 화면
 class ConfigErrorApp extends StatelessWidget {
-  final String message;
-
-  const ConfigErrorApp({super.key, required this.message});
+  const ConfigErrorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '명함 QR코드',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16),
+      theme: HaloTheme.light(),
+      darkTheme: HaloTheme.dark(),
+      localizationsDelegates: _localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) {
+          final t = context.halo;
+          final l10n = AppLocalizations.of(context);
+          return HaloScaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(HaloSpace.xxl),
+                child: HaloCard(
+                  padding: const EdgeInsets.all(HaloSpace.xl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: HaloShape.badgeLg,
+                        height: HaloShape.badgeLg,
+                        decoration: BoxDecoration(
+                          color: t.errSoft,
+                          borderRadius: BorderRadius.circular(
+                            HaloShape.badgeLgRadius,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.error_outline,
+                          size: 28,
+                          color: t.errText,
+                        ),
+                      ),
+                      const SizedBox(height: HaloSpace.lg),
+                      Text(
+                        l10n.configErrorTitle,
+                        style: HaloType.cardTitle.copyWith(color: t.text),
+                      ),
+                      const SizedBox(height: HaloSpace.sm),
+                      Text(
+                        l10n.configErrorKakaoKeyMissing,
+                        textAlign: TextAlign.center,
+                        style: HaloType.body.copyWith(color: t.muted),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -83,27 +133,15 @@ class BusinessCardApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '명함 QR코드',
+      // 작업 전환기에 뜨는 이름 — 기기 언어에 따라 바뀌므로 상수가 아니라 콜백이다.
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2196F3),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
+      // 디자인: Halo — 색·그림자·둥글기의 단일 출처는 core/theme/halo_flourish.dart
+      theme: HaloTheme.light(),
+      darkTheme: HaloTheme.dark(),
+      themeMode: ThemeMode.system,
+      localizationsDelegates: _localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const HomeScreen(),
     );
   }
@@ -119,6 +157,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final BusinessCardService _businessCardService = BusinessCardService();
   bool _isChecking = true;
+  bool _isLoggingIn = false;
 
   @override
   void initState() {
@@ -169,64 +208,68 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.halo;
+    final l10n = AppLocalizations.of(context);
+
     // 로그인 상태 체크 중이면 로딩 표시
     if (_isChecking) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const HaloScaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(32),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.qr_code, size: 120, color: Color(0xFF2196F3)),
-            const SizedBox(height: 32),
-            const Text(
-              '명함 QR코드',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF212529),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'QR코드로 간편하게 명함을 공유하세요',
-              style: TextStyle(fontSize: 16, color: Color(0xFF6C757D)),
-            ),
-            const SizedBox(height: 64),
-            ElevatedButton(
-              onPressed: () async {
-                await _loginWithKakao(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFEE500),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 16,
+
+    return HaloScaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: HaloSpace.screen),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ② 이 화면의 유일한 그라디언트 — 초점은 여기 하나뿐이다.
+              const Center(
+                child: HaloIconBadge(
+                  icon: Icons.qr_code_2,
+                  size: HaloShape.badgeLg,
                 ),
               ),
-              child: const Text(
-                '카카오로 로그인',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              const SizedBox(height: HaloSpace.xl),
+              Text(
+                l10n.appTitle,
+                textAlign: TextAlign.center,
+                style: HaloType.hero.copyWith(color: t.text),
               ),
-            ),
-          ],
+              const SizedBox(height: HaloSpace.md),
+              Text(
+                l10n.loginTagline,
+                textAlign: TextAlign.center,
+                style: HaloType.body.copyWith(color: t.muted),
+              ),
+              const SizedBox(height: HaloSpace.xxl * 2),
+              HaloKakaoButton(
+                loading: _isLoggingIn,
+                onPressed: () async {
+                  await _loginWithKakao(context);
+                },
+              ),
+              const SizedBox(height: HaloSpace.lg),
+              Text(
+                l10n.loginKakaoNotice,
+                textAlign: TextAlign.center,
+                style: HaloType.label.copyWith(color: t.muted2),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Future<void> _loginWithKakao(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _isLoggingIn = true;
+    });
     try {
       print('[LOGIN] 카카오 로그인 시작');
 
@@ -269,9 +312,17 @@ class _HomeScreenState extends State<HomeScreen> {
       print('[LOGIN] 카카오 로그인 실패: $error');
       print('[LOGIN] 스택트레이스: $stackTrace');
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('로그인 실패: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.loginFailed(AppErrorText.of(l10n, error))),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingIn = false;
+        });
       }
     }
   }
@@ -283,7 +334,9 @@ class _HomeScreenState extends State<HomeScreen> {
       print('사용자 정보 백엔드 동기화 완료');
     } catch (e) {
       print('백엔드 사용자 동기화 실패: $e');
-      throw Exception('사용자 정보 동기화에 실패했습니다: $e');
+      // 여기서 한국어 문장으로 감싸면 다른 언어에서 그대로 새어 나온다.
+      // 원인 오류(AppException)를 그대로 올려 보내 호출부가 번역하게 둔다.
+      rethrow;
     }
   }
 }
@@ -301,6 +354,8 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
   static const int _pageSize = 20;
 
   final BusinessCardService _businessCardService = BusinessCardService();
+  final BillingService _billingService = BillingService();
+  final AccountService _accountService = AccountService();
   final ScrollController _scrollController = ScrollController();
   List<BusinessCard> _businessCards = [];
   bool _isLoading = true; // 첫 페이지 로딩
@@ -308,17 +363,101 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
   bool _hasMore = true; // 더 가져올 페이지가 있는지
   int _nextPage = 0; // 다음에 요청할 페이지 번호
 
+  /// 서버에 물어보기 전에는 보수적으로 잡는다 — 낙관적으로 열어 두면
+  /// 등록 버튼을 눌렀다가 서버에서 막히는 경험이 된다.
+  Entitlement _entitlement = Entitlement.unknown;
+  StreamSubscription<Entitlement>? _entitlementSub;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // 앱이 꺼져 있는 동안 끝난 결제도 이 스트림으로 들어온다 — 목록에 들어오자마자 듣기 시작한다.
+    _billingService.start();
+    // 결제가 검증될 때마다(이 화면에서든 결제 화면에서든) 자격이 흘러들어온다.
+    // 화면이 돌아올 때마다 다시 조회하는 것보다 정확하고 호출도 적다.
+    _entitlementSub = _billingService.entitlementStream.listen((entitlement) {
+      if (mounted) setState(() => _entitlement = entitlement);
+    });
     _loadFirstPage();
+    _loadEntitlement();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _entitlementSub?.cancel();
+    _billingService.dispose();
     super.dispose();
+  }
+
+  /// 지금 프로인지·몇 장 남았는지. 실패해도 화면을 막지 않는다(등록 시 서버가 다시 판정한다).
+  Future<void> _loadEntitlement() async {
+    try {
+      final entitlement = await _billingService.fetchEntitlement();
+      if (!mounted) return;
+      setState(() => _entitlement = entitlement);
+    } catch (e) {
+      print('[UI] 자격 조회 실패: $e');
+    }
+  }
+
+  /// 결제 화면을 연다. 구매가 성사되면 [BillingService.entitlementStream] 으로
+  /// 자격이 흘러들어오므로 여기서 결과를 받아 처리하지 않는다.
+  Future<void> _openProScreen({bool limitReached = false}) {
+    return Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProScreen(
+          billingService: _billingService,
+          initialEntitlement: _entitlement,
+          limitReached: limitReached,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    final l10n = AppLocalizations.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteAccountTitle),
+        content: Text(l10n.deleteAccountMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              l10n.deleteAccountConfirm,
+              // 되돌릴 수 없는 동작이라 색으로도 구분한다.
+              style: TextStyle(color: context.halo.err),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+    try {
+      await _accountService.deleteAccount();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.deleteAccountSucceeded)),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.deleteAccountFailed(AppErrorText.of(l10n, e)))),
+      );
+    }
   }
 
   void _onScroll() {
@@ -332,6 +471,7 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
 
   /// 첫 페이지 로드(진입 시 1회). 당겨서 새로고침 시에도 여기로 리셋된다.
   Future<void> _loadFirstPage() async {
+    final l10n = AppLocalizations.of(context);
     try {
       print('[UI] 명함 목록 1페이지 로딩 시작');
       final page = await _businessCardService.getBusinessCards(
@@ -352,9 +492,9 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('명함을 불러오는데 실패했습니다: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.cardsLoadFailed(AppErrorText.of(l10n, e)))),
+      );
     }
   }
 
@@ -391,207 +531,348 @@ class _BusinessCardListScreenState extends State<BusinessCardListScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('내 명함'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+  Future<void> _openAddScreen() async {
+    // 한도를 넘겼으면 폼을 다 채운 뒤 거절하지 않고 먼저 알린다.
+    // (서버도 등록 시 한 번 더 막으므로, 이건 UX 를 위한 앞단 검사일 뿐이다)
+    if (!_entitlement.canAddCard) {
+      await _openProScreen(limitReached: true);
+      if (!mounted || !_entitlement.canAddCard) return;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BusinessCardFormScreen()),
+    );
+    if (!mounted) return;
+    if (result is String) {
+      // 추가: 등록 API 성공 후 새 명함만 조회해 캐시 최상단에 추가 (목록 재조회 없음)
+      try {
+        final newCard = await _businessCardService.getBusinessCard(result);
+        if (!mounted) return;
+        setState(() {
+          _businessCards.insert(0, newCard);
+          // 남은 장수 표시가 바로 줄어들도록 캐시도 같이 올린다(재조회 없음).
+          _entitlement = _entitlement.withCardCount(_entitlement.cardCount + 1);
+        });
+        _showFromFirstPage(); // 1페이지(맨 위)부터 보여주기
+      } catch (e) {
+        print('[목록] 새 명함 조회 실패: $e');
+        _loadFirstPage(); // 실패 시 폴백: 1페이지 재조회
+      }
+    } else if (result == true) {
+      _loadFirstPage(); // 폴백
+    }
+  }
+
+  Future<void> _openCard(BusinessCard card) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BusinessCardViewScreen(businessCard: card),
+      ),
+    );
+    if (!mounted) return;
+    if (result is BusinessCard) {
+      // 수정: 수정 API 성공 후 해당 명함만 캐시에서 교체 (목록 재조회 없음)
+      setState(() {
+        final index = _businessCards.indexWhere((c) => c.id == result.id);
+        if (index != -1) {
+          _businessCards[index] = result;
+        }
+      });
+      _showFromFirstPage();
+    } else if (result is Map && result['deletedId'] is String) {
+      // 삭제: 삭제 API 성공 후 해당 명함만 캐시에서 제거 (목록 재조회 없음)
+      setState(() {
+        _businessCards.removeWhere((c) => c.id == result['deletedId']);
+        // 삭제한 만큼 한도가 다시 열린다(서버도 활성 명함만 센다).
+        _entitlement = _entitlement.withCardCount(_entitlement.cardCount - 1);
+      });
+      _showFromFirstPage();
+    } else if (result == true) {
+      _loadFirstPage(); // 전체 새로고침 (폴백)
+    }
+  }
+
+  Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context);
+    // 로그아웃 확인 다이얼로그
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.actionLogout),
+        content: Text(l10n.logoutConfirmMessage),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              // 로그아웃 확인 다이얼로그
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('로그아웃'),
-                  content: const Text('로그아웃 하시겠습니까?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('취소'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('로그아웃'),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true && context.mounted) {
-                try {
-                  // 카카오 로그아웃
-                  await kakao.UserApi.instance.logout();
-                  print('[LOGOUT] 카카오 로그아웃 성공');
-
-                  // 로그인 화면으로 이동
-                  if (context.mounted) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  print('[LOGOUT] 로그아웃 실패: $e');
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('로그아웃 실패: $e')));
-                  }
-                }
-              }
-            },
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.actionCancel),
           ),
-          // 새로고침 버튼 없음(의도): 목록은 진입 시 1회 로드 후 메모리 유지하고,
-          // 등록/수정/삭제 결과가 돌아올 때만 갱신한다 (서버 재조회 최소화).
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.actionLogout),
+          ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BusinessCardFormScreen(),
-                    ),
-                  );
-                  if (!mounted) return;
-                  if (result is String) {
-                    // 추가: 등록 API 성공 후 새 명함만 조회해 캐시 최상단에 추가 (목록 재조회 없음)
-                    try {
-                      final newCard = await _businessCardService
-                          .getBusinessCard(result);
-                      if (!mounted) return;
-                      setState(() {
-                        _businessCards.insert(0, newCard);
-                      });
-                      _showFromFirstPage(); // 1페이지(맨 위)부터 보여주기
-                    } catch (e) {
-                      print('[목록] 새 명함 조회 실패: $e');
-                      _loadFirstPage(); // 실패 시 폴백: 1페이지 재조회
-                    }
-                  } else if (result == true) {
-                    _loadFirstPage(); // 폴백
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text(
-                  '명함 추가하기',
-                  style: TextStyle(
-                    fontSize: 22.4, // 16 * 1.4 = 22.4 (40% 증가)
-                    fontWeight: FontWeight.w600,
-                  ),
+    );
+
+    if (confirm != true || !mounted) return;
+    try {
+      // 백엔드 세션 토큰을 먼저 버린다. 카카오만 로그아웃하고 이걸 남겨 두면
+      // 아직 만료되지 않은 앞사람 토큰으로 요청이 나가 남의 명함이 보일 수 있다.
+      ApiClient().clearSession();
+
+      // 카카오 로그아웃
+      await kakao.UserApi.instance.logout();
+      print('[LOGOUT] 카카오 로그아웃 성공');
+
+      // 로그인 화면으로 이동
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } catch (e) {
+      print('[LOGOUT] 로그아웃 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.logoutFailed(AppErrorText.of(l10n, e)))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.halo;
+    final topInset = HaloScaffold.contentTopInset(context);
+
+    return HaloScaffold(
+      appBar: HaloAppBar(
+        title: l10n.myCards,
+        automaticallyImplyLeading: false,
+        actions: [
+          HaloAppBarAction(
+            // 프로면 상태 확인용, 아니면 업그레이드 입구.
+            icon: _entitlement.pro
+                ? Icons.workspace_premium
+                : Icons.auto_awesome_outlined,
+            tooltip: _entitlement.pro ? l10n.proActive : l10n.upgradeToPro,
+            onPressed: _openProScreen,
+          ),
+          // 로그아웃·회원탈퇴는 자주 쓰지 않고 되돌리기 어려워 메뉴 안에 둔다.
+          PopupMenuButton<_AccountMenuAction>(
+            icon: Icon(Icons.more_vert, color: t.muted),
+            tooltip: l10n.actionClose,
+            onSelected: (action) => switch (action) {
+              _AccountMenuAction.logout => _logout(),
+              _AccountMenuAction.deleteAccount => _deleteAccount(),
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: _AccountMenuAction.logout,
+                child: Text(l10n.actionLogout),
+              ),
+              PopupMenuItem(
+                value: _AccountMenuAction.deleteAccount,
+                child: Text(
+                  l10n.deleteAccountAction,
+                  style: TextStyle(color: t.err),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
+              ),
+            ],
+          ),
+          const SizedBox(width: HaloSpace.sm),
+        ],
+        // 새로고침 버튼 없음(의도): 목록은 진입 시 1회 로드 후 메모리 유지하고,
+        // 등록/수정/삭제 결과가 돌아올 때만 갱신한다 (서버 재조회 최소화).
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadFirstPage,
+        edgeOffset: topInset,
+        color: t.point,
+        backgroundColor: t.surface,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                HaloSpace.screen,
+                topInset,
+                HaloSpace.screen,
+                HaloSpace.xl,
+              ),
+              // ② 이 화면의 유일한 히어로 — 페이지당 1개.
+              sliver: SliverToBoxAdapter(
+                child: HaloHero(
+                  title: l10n.myCards,
+                  // 무료 사용자에게는 남은 장수를, 프로에게는 그냥 개수를 보여준다.
+                  subtitle: _isLoading
+                      ? l10n.statusLoading
+                      : _entitlement.cardLimit == null
+                      ? l10n.cardsShareSubtitle(_businessCards.length)
+                      : l10n.cardCountUsage(
+                          _entitlement.cardCount,
+                          _entitlement.cardLimit!,
+                        ),
+                  icon: Icons.badge_outlined,
+                  footer: HaloOnHeroButton(
+                    label: l10n.addCard,
+                    icon: Icons.add,
+                    onPressed: _openAddScreen,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _businessCards.isEmpty
-                  ? const Center(
-                      child: Text(
-                        '아직 등록된 명함이 없습니다.\n위의 버튼을 눌러 명함을 추가해보세요!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF6C757D),
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadFirstPage,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        // 더 가져올 페이지가 있으면 마지막에 로딩 행 1개 추가
-                        itemCount: _businessCards.length + (_hasMore ? 1 : 0),
-                        padding: const EdgeInsets.only(
-                          bottom: 80,
-                        ), // 네비게이션 바 여백
-                        itemBuilder: (context, index) {
-                          // 무한스크롤 로딩 행
-                          if (index >= _businessCards.length) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          final card = _businessCards[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: InkWell(
-                              onTap: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        BusinessCardViewScreen(
-                                          businessCard: card,
-                                        ),
-                                  ),
-                                );
-                                if (!mounted) return;
-                                if (result is BusinessCard) {
-                                  // 수정: 수정 API 성공 후 해당 명함만 캐시에서 교체 (목록 재조회 없음)
-                                  setState(() {
-                                    final index = _businessCards.indexWhere(
-                                      (c) => c.id == result.id,
-                                    );
-                                    if (index != -1) {
-                                      _businessCards[index] = result;
-                                    }
-                                  });
-                                  _showFromFirstPage();
-                                } else if (result is Map &&
-                                    result['deletedId'] is String) {
-                                  // 삭제: 삭제 API 성공 후 해당 명함만 캐시에서 제거 (목록 재조회 없음)
-                                  setState(() {
-                                    _businessCards.removeWhere(
-                                      (c) => c.id == result['deletedId'],
-                                    );
-                                  });
-                                  _showFromFirstPage();
-                                } else if (result == true) {
-                                  _loadFirstPage(); // 전체 새로고침 (폴백)
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
-                                  horizontal: 16,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    card.fullName,
-                                    style: const TextStyle(
-                                      fontSize:
-                                          22.4, // 16 * 1.4 = 22.4 (40% 증가)
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-            ),
+            if (_isLoading)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_businessCards.isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: _EmptyCardList(),
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  HaloSpace.screen,
+                  0,
+                  HaloSpace.screen,
+                  HaloScaffold.contentBottomInset(context) + HaloSpace.xxl,
+                ),
+                sliver: SliverList.separated(
+                  // 더 가져올 페이지가 있으면 마지막에 로딩 행 1개 추가
+                  itemCount: _businessCards.length + (_hasMore ? 1 : 0),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: HaloSpace.gap),
+                  itemBuilder: (context, index) {
+                    // 무한스크롤 로딩 행
+                    if (index >= _businessCards.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: HaloSpace.lg),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final card = _businessCards[index];
+                    return _BusinessCardTile(
+                      card: card,
+                      onTap: () => _openCard(card),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 앱바 메뉴의 항목. 되돌리기 어려운 동작이라 아이콘 버튼 대신 메뉴에 넣는다.
+enum _AccountMenuAction { logout, deleteAccount }
+
+/// 목록의 한 줄. 반복되는 자리라 아이콘 배지는 조용한(soft) 쪽을 쓴다 —
+/// 그라디언트 배지를 줄마다 깔면 한 화면에 8개가 넘어 원칙 ②를 깬다.
+class _BusinessCardTile extends StatelessWidget {
+  const _BusinessCardTile({required this.card, required this.onTap});
+
+  final BusinessCard card;
+  final VoidCallback onTap;
+
+  String get _initial {
+    final trimmed = card.fullName.trim();
+    if (trimmed.isEmpty) return '?';
+    return String.fromCharCode(trimmed.runes.first);
+  }
+
+  String? get _subtitle {
+    final parts = [
+      card.organization,
+      card.title,
+    ].where((v) => v != null && v.isNotEmpty).cast<String>();
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.halo;
+    final subtitle = _subtitle;
+
+    return HaloCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(
+        horizontal: HaloSpace.lg,
+        vertical: HaloSpace.lg,
+      ),
+      child: Row(
+        children: [
+          HaloIconBadge(label: _initial, soft: true),
+          const SizedBox(width: HaloSpace.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  card.fullName,
+                  overflow: TextOverflow.ellipsis,
+                  style: HaloType.cardTitle.copyWith(color: t.text),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: HaloType.label.copyWith(color: t.muted2),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: HaloSpace.sm),
+          Icon(Icons.chevron_right, color: t.muted2, size: 22),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyCardList extends StatelessWidget {
+  const _EmptyCardList();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.halo;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        HaloSpace.screen,
+        0,
+        HaloSpace.screen,
+        HaloSpace.xxl * 2,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const HaloIconBadge(
+            icon: Icons.badge_outlined,
+            size: HaloShape.badgeLg,
+            soft: true,
+          ),
+          const SizedBox(height: HaloSpace.lg),
+          Text(
+            l10n.emptyCardsTitle,
+            style: HaloType.cardTitle.copyWith(color: t.text),
+          ),
+          const SizedBox(height: HaloSpace.sm),
+          Text(
+            l10n.emptyCardsBody,
+            textAlign: TextAlign.center,
+            style: HaloType.body.copyWith(color: t.muted),
+          ),
+        ],
       ),
     );
   }
@@ -659,236 +940,209 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditMode ? '명함 수정' : '명함 등록'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+    final l10n = AppLocalizations.of(context);
+    final topInset = HaloScaffold.contentTopInset(context);
+
+    return HaloScaffold(
+      appBar: HaloAppBar(
+        title: _isEditMode ? l10n.formTitleEdit : l10n.formTitleCreate,
         actions: [
-          _isLoading
-              ? const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : TextButton(
-                  onPressed: _saveBusinessCard,
-                  child: const Text(
-                    '저장',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
+          // ② 이 화면의 유일한 그라디언트 — 주 동작은 저장 하나다.
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: HaloSpace.sm,
+              horizontal: HaloSpace.md,
+            ),
+            child: HaloPrimaryButton(
+              label: l10n.actionSave,
+              expand: false,
+              loading: _isLoading,
+              onPressed: _saveBusinessCard,
+            ),
+          ),
         ],
       ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            HaloSpace.screen,
+            topInset,
+            HaloSpace.screen,
+            HaloScaffold.contentBottomInset(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 명함 이미지 업로드 (최상단)
-              const Text(
-                '명함 이미지',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              HaloSectionHeading(
+                l10n.sectionCardImage,
+                icon: Icons.image_outlined,
               ),
-              const SizedBox(height: 16),
-
-              GestureDetector(
-                onTap: _pickBusinessCardImage,
-                child: Container(
-                  width: double.infinity,
-                  height: 240,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: _businessCardImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(_businessCardImage!.path),
-                            width: double.infinity,
-                            height: 240,
-                            fit: BoxFit.contain,
-                          ),
-                        )
-                      : (_isEditMode &&
-                            widget.businessCard!.businessCardImageUrl != null)
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            widget.businessCard!.businessCardImageUrl!,
-                            width: double.infinity,
-                            height: 240,
-                            fit: BoxFit.contain,
-                          ),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.image,
-                              size: 60,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 8),
-                            TextButton.icon(
-                              onPressed: _pickBusinessCardImage,
-                              icon: const Icon(Icons.add_photo_alternate),
-                              label: const Text('명함 이미지 추가'),
-                            ),
-                          ],
+              HaloCard(
+                padding: const EdgeInsets.all(HaloSpace.md),
+                child: Column(
+                  children: [
+                    _BusinessCardImagePicker(
+                      pickedImage: _businessCardImage,
+                      existingImageUrl: _isEditMode
+                          ? widget.businessCard!.businessCardImageUrl
+                          : null,
+                      onTap: _pickBusinessCardImage,
+                    ),
+                    if (_businessCardImage != null ||
+                        (_isEditMode &&
+                            widget.businessCard!.businessCardImageUrl != null))
+                      Padding(
+                        padding: const EdgeInsets.only(top: HaloSpace.md),
+                        child: HaloSecondaryButton(
+                          label: l10n.changeImage,
+                          icon: Icons.edit_outlined,
+                          onPressed: _pickBusinessCardImage,
                         ),
+                      ),
+                  ],
                 ),
               ),
 
-              if (_businessCardImage != null ||
-                  (_isEditMode &&
-                      widget.businessCard!.businessCardImageUrl != null))
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: TextButton.icon(
-                    onPressed: _pickBusinessCardImage,
-                    icon: const Icon(Icons.edit),
-                    label: const Text('이미지 변경'),
-                  ),
+              const SizedBox(height: HaloSpace.xxl),
+
+              HaloSectionHeading(
+                l10n.sectionBasicInfo,
+                icon: Icons.person_outline,
+              ),
+              HaloCard(
+                padding: const EdgeInsets.fromLTRB(
+                  HaloSpace.lg,
+                  HaloSpace.xl,
+                  HaloSpace.lg,
+                  HaloSpace.xs,
                 ),
-
-              const SizedBox(height: 32),
-
-              const Text(
-                '기본 정보',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _fnController,
-                label: '성명 (연락처에 저장될 이름) *',
-                hint: '홍길동',
-                validator: (value) =>
-                    value?.isEmpty ?? true ? '성명을 입력해주세요' : null,
+                child: HaloTextField(
+                  controller: _fnController,
+                  label: l10n.fieldFullName,
+                  hint: l10n.hintFullName,
+                  required: true,
+                  validator: (value) => value?.isEmpty ?? true
+                      ? l10n.validationFullNameRequired
+                      : null,
+                ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: HaloSpace.xxl),
 
-              const Text(
-                '연락처 정보',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              HaloSectionHeading(
+                l10n.sectionContactInfo,
+                icon: Icons.call_outlined,
               ),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _telController,
-                label: '전화번호 *',
-                hint: '01012345678',
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value?.isEmpty ?? true ? '전화번호를 입력해주세요' : null,
-              ),
-
-              _buildTextField(
-                controller: _emailController,
-                label: '이메일',
-                hint: 'example@email.com',
-                keyboardType: TextInputType.emailAddress,
-              ),
-
-              _buildTextField(
-                controller: _urlController,
-                label: '웹사이트',
-                hint: 'https://example.com',
-                keyboardType: TextInputType.url,
-              ),
-
-              const SizedBox(height: 24),
-
-              const Text(
-                '조직 정보',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _orgController,
-                label: '조직/회사',
-                hint: '(주)예시회사',
+              HaloCard(
+                padding: const EdgeInsets.fromLTRB(
+                  HaloSpace.lg,
+                  HaloSpace.xl,
+                  HaloSpace.lg,
+                  HaloSpace.xs,
+                ),
+                child: Column(
+                  children: [
+                    HaloTextField(
+                      controller: _telController,
+                      label: l10n.fieldPhone,
+                      hint: '01012345678',
+                      required: true,
+                      keyboardType: TextInputType.number,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? l10n.validationPhoneRequired
+                          : null,
+                    ),
+                    HaloTextField(
+                      controller: _emailController,
+                      label: l10n.fieldEmail,
+                      hint: 'example@email.com',
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    HaloTextField(
+                      controller: _urlController,
+                      label: l10n.fieldWebsite,
+                      hint: 'https://example.com',
+                      keyboardType: TextInputType.url,
+                    ),
+                  ],
+                ),
               ),
 
-              _buildTextField(
-                controller: _titleController,
-                label: '직책',
-                hint: '개발팀장',
+              const SizedBox(height: HaloSpace.xxl),
+
+              HaloSectionHeading(
+                l10n.sectionOrgInfo,
+                icon: Icons.apartment_outlined,
+              ),
+              HaloCard(
+                padding: const EdgeInsets.fromLTRB(
+                  HaloSpace.lg,
+                  HaloSpace.xl,
+                  HaloSpace.lg,
+                  HaloSpace.xs,
+                ),
+                child: Column(
+                  children: [
+                    HaloTextField(
+                      controller: _orgController,
+                      label: l10n.fieldOrganization,
+                      hint: l10n.hintOrganization,
+                    ),
+                    HaloTextField(
+                      controller: _titleController,
+                      label: l10n.fieldJobTitle,
+                      hint: l10n.hintJobTitle,
+                    ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: HaloSpace.xxl),
 
-              const Text(
-                '주소 정보',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              HaloSectionHeading(
+                l10n.sectionAddressInfo,
+                icon: Icons.place_outlined,
               ),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _adrController,
-                label: '주소',
-                hint: '서울특별시 강남구 테헤란로 123',
-                maxLines: 2,
-              ),
-
-              const SizedBox(height: 24),
-
-              const Text(
-                '추가 정보',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _noteController,
-                label: '메모',
-                hint: '추가 정보나 특별한 메시지',
-                maxLines: 3,
+              HaloCard(
+                padding: const EdgeInsets.fromLTRB(
+                  HaloSpace.lg,
+                  HaloSpace.xl,
+                  HaloSpace.lg,
+                  HaloSpace.xs,
+                ),
+                child: HaloTextField(
+                  controller: _adrController,
+                  label: l10n.fieldAddress,
+                  hint: l10n.hintAddress,
+                  maxLines: 2,
+                ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: HaloSpace.xxl),
+
+              HaloSectionHeading(
+                l10n.sectionExtraInfo,
+                icon: Icons.sticky_note_2_outlined,
+              ),
+              HaloCard(
+                padding: const EdgeInsets.fromLTRB(
+                  HaloSpace.lg,
+                  HaloSpace.xl,
+                  HaloSpace.lg,
+                  HaloSpace.xs,
+                ),
+                child: HaloTextField(
+                  controller: _noteController,
+                  label: l10n.fieldNote,
+                  hint: l10n.hintNote,
+                  maxLines: 3,
+                ),
+              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hint,
-    String? helperText,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          helperText: helperText,
-          border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        validator: validator,
       ),
     );
   }
@@ -897,45 +1151,70 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
+        final l10n = AppLocalizations.of(context);
+        final t = context.halo;
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera),
-                title: const Text('카메라'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final image = await _picker.pickImage(
-                    source: ImageSource.camera,
-                    imageQuality: 85, // iOS에서 HEIC 대신 JPEG로 재인코딩
-                  );
-                  if (!mounted) return;
-                  if (image != null) {
-                    setState(() {
-                      _businessCardImage = image;
-                    });
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('갤러리'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final image = await _picker.pickImage(
-                    source: ImageSource.gallery,
-                    imageQuality: 85, // iOS에서 HEIC 대신 JPEG로 재인코딩
-                  );
-                  if (!mounted) return;
-                  if (image != null) {
-                    setState(() {
-                      _businessCardImage = image;
-                    });
-                  }
-                },
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              HaloSpace.md,
+              HaloSpace.md,
+              HaloSpace.md,
+              HaloSpace.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: HaloSpace.lg),
+                  decoration: BoxDecoration(
+                    color: t.border,
+                    borderRadius: HaloShape.round,
+                  ),
+                ),
+                ListTile(
+                  leading: const HaloIconBadge(
+                    icon: Icons.photo_camera_outlined,
+                    soft: true,
+                  ),
+                  title: Text(l10n.sourceCamera),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final image = await _picker.pickImage(
+                      source: ImageSource.camera,
+                      imageQuality: 85, // iOS에서 HEIC 대신 JPEG로 재인코딩
+                    );
+                    if (!mounted) return;
+                    if (image != null) {
+                      setState(() {
+                        _businessCardImage = image;
+                      });
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const HaloIconBadge(
+                    icon: Icons.photo_library_outlined,
+                    soft: true,
+                  ),
+                  title: Text(l10n.sourceGallery),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final image = await _picker.pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 85, // iOS에서 HEIC 대신 JPEG로 재인코딩
+                    );
+                    if (!mounted) return;
+                    if (image != null) {
+                      setState(() {
+                        _businessCardImage = image;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -943,6 +1222,7 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
   }
 
   Future<void> _saveBusinessCard() async {
+    final l10n = AppLocalizations.of(context);
     print('=== 명함 저장 시작 ===');
 
     if (_formKey.currentState!.validate()) {
@@ -987,9 +1267,7 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                _isEditMode ? '명함이 성공적으로 수정되었습니다' : '명함이 성공적으로 저장되었습니다',
-              ),
+              content: Text(_isEditMode ? l10n.cardUpdated : l10n.cardSaved),
             ),
           );
           // 등록 시: cardId 반환, 수정 시: true 반환
@@ -1002,9 +1280,9 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
         print('========================');
 
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.saveFailed(AppErrorText.of(l10n, e)))),
+          );
         }
       } finally {
         if (mounted) {
@@ -1017,6 +1295,73 @@ class _BusinessCardFormScreenState extends State<BusinessCardFormScreen> {
     } else {
       print('폼 유효성 검사 실패');
     }
+  }
+}
+
+/// 명함 이미지 자리 — 비었을 때는 [HaloTokens.soft] 면에 조용한 배지 하나.
+class _BusinessCardImagePicker extends StatelessWidget {
+  const _BusinessCardImagePicker({
+    required this.pickedImage,
+    required this.existingImageUrl,
+    required this.onTap,
+  });
+
+  final XFile? pickedImage;
+  final String? existingImageUrl;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.halo;
+    final hasImage = pickedImage != null || existingImageUrl != null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 240,
+        decoration: BoxDecoration(
+          color: t.surfaceAlt,
+          borderRadius: HaloShape.input,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: hasImage
+            ? (pickedImage != null
+                  ? Image.file(
+                      File(pickedImage!.path),
+                      width: double.infinity,
+                      height: 240,
+                      fit: BoxFit.contain,
+                    )
+                  : Image.network(
+                      existingImageUrl!,
+                      width: double.infinity,
+                      height: 240,
+                      fit: BoxFit.contain,
+                    ))
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const HaloIconBadge(
+                    icon: Icons.add_photo_alternate_outlined,
+                    size: HaloShape.badgeLg,
+                    soft: true,
+                  ),
+                  const SizedBox(height: HaloSpace.md),
+                  Text(
+                    l10n.imagePickerTitle,
+                    style: HaloType.button.copyWith(color: t.point),
+                  ),
+                  const SizedBox(height: HaloSpace.xs),
+                  Text(
+                    l10n.imagePickerBody,
+                    style: HaloType.label.copyWith(color: t.muted2),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 }
 
@@ -1081,7 +1426,8 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
             : Image.network(imageUrl, fit: BoxFit.contain);
 
         return Dialog(
-          insetPadding: const EdgeInsets.all(16),
+          insetPadding: const EdgeInsets.all(HaloSpace.lg),
+          clipBehavior: Clip.antiAlias,
           child: InteractiveViewer(
             minScale: 0.8,
             maxScale: 4.0,
@@ -1100,65 +1446,47 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final l10n = AppLocalizations.of(context);
+        final t = context.halo;
+        final f = context.flourish;
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(24),
+          child: Padding(
+            padding: const EdgeInsets.all(HaloSpace.xl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  textAlign: TextAlign.center,
+                  style: HaloType.cardTitle.copyWith(color: t.text),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: HaloSpace.sm),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[600],
-                  ),
+                  style: HaloType.body.copyWith(color: t.muted),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: HaloSpace.xl),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(HaloSpace.lg),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
+                    // QR 은 스캔이 되어야 하므로 다크 모드에서도 바탕이 흰색이다.
+                    color: f.qrSurface,
+                    borderRadius: HaloShape.input,
+                    boxShadow: f.sh,
                   ),
                   child: QrImageView(
                     data: url,
                     version: QrVersions.auto,
                     size: 200.0,
-                    backgroundColor: Colors.white,
+                    backgroundColor: f.qrSurface,
                   ),
                 ),
-                const SizedBox(height: 24),
-                Center(
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                    label: const Text(
-                      '닫기',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(200, 50),
-                    ),
-                  ),
+                const SizedBox(height: HaloSpace.xl),
+                HaloPrimaryButton(
+                  label: l10n.actionClose,
+                  icon: Icons.close,
+                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
@@ -1168,400 +1496,403 @@ class _BusinessCardViewScreenState extends State<BusinessCardViewScreen> {
     );
   }
 
+  Future<void> _editCard() async {
+    final l10n = AppLocalizations.of(context);
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            BusinessCardFormScreen(businessCard: widget.businessCard),
+      ),
+    );
+    if (result != true || !mounted) return;
+
+    // 수정 완료 후 현재 화면을 새로운 데이터로 완전히 교체
+    _wasModified = true;
+    try {
+      final updatedCard = await _businessCardService.getBusinessCard(
+        widget.businessCard.id!,
+      );
+      print('[View] 수정된 데이터 로드 완료');
+      if (!mounted) return;
+      // 기존 상세 화면을 제거하고, 수정된 데이터로 새 상세 화면 열기
+      // updatedCard를 목록 화면에 전달하여 부분 업데이트
+      Navigator.pop(context, updatedCard); // 수정된 명함 데이터 전달
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              BusinessCardViewScreen(businessCard: updatedCard),
+        ),
+      );
+    } catch (e) {
+      print('[View] 데이터 새로고침 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.refreshFailed(AppErrorText.of(l10n, e)))),
+      );
+    }
+  }
+
+  Future<void> _deleteCard() async {
+    final l10n = AppLocalizations.of(context);
+    final card = widget.businessCard;
+    final t = context.halo;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteCardTitle),
+        content: Text(l10n.deleteCardMessage(card.fullName)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.actionDelete, style: TextStyle(color: t.errText)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    try {
+      // 삭제 API 성공 후 목록 화면이 캐시에서 이 명함만 제거한다 (목록 재조회 없음)
+      await _businessCardService.deleteBusinessCard(card.id!);
+      if (!mounted) return;
+      Navigator.pop(context, {'deletedId': card.id});
+    } catch (e) {
+      print('[View] 명함 삭제 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.deleteCardFailed(AppErrorText.of(l10n, e))),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openVcfQrCode() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final vcfUrl = await _getVcfDownloadUrl();
+      if (!mounted) return;
+      _showQrCodeDialog(
+        url: vcfUrl,
+        title: l10n.vcfQrTitle,
+        description: l10n.vcfQrDescription,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.qrCreateFailed(AppErrorText.of(l10n, e)))),
+      );
+    }
+  }
+
+  Future<void> _openImageQrCode() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final imageUrl = await _getImageDownloadUrl();
+      if (!mounted) return;
+      _showQrCodeDialog(
+        url: imageUrl,
+        title: l10n.imageQrTitle,
+        description: l10n.imageQrDescription,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.qrCreateFailed(AppErrorText.of(l10n, e)))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.halo;
     final card = widget.businessCard;
+    final topInset = HaloScaffold.contentTopInset(context);
+    final hasImage =
+        card.businessCardImageUrl != null &&
+        card.businessCardImageUrl!.isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(card.fullName),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+    final heroSubtitleParts = [
+      card.organization,
+      card.title,
+    ].where((v) => v != null && v.isNotEmpty).cast<String>();
+
+    return HaloScaffold(
+      appBar: HaloAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: l10n.actionBack,
           onPressed: () {
             Navigator.pop(context, _wasModified);
           },
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      BusinessCardFormScreen(businessCard: widget.businessCard),
-                ),
-              );
-              if (result == true && context.mounted) {
-                // 수정 완료 후 현재 화면을 새로운 데이터로 완전히 교체
-                _wasModified = true;
-                try {
-                  final updatedCard = await _businessCardService
-                      .getBusinessCard(widget.businessCard.id!);
-                  print('[View] 수정된 데이터 로드 완료');
-                  if (!context.mounted) return;
-                  // 기존 상세 화면을 제거하고, 수정된 데이터로 새 상세 화면 열기
-                  // updatedCard를 목록 화면에 전달하여 부분 업데이트
-                  Navigator.pop(context, updatedCard); // 수정된 명함 데이터 전달
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          BusinessCardViewScreen(businessCard: updatedCard),
-                    ),
-                  );
-                } catch (e) {
-                  print('[View] 데이터 새로고침 실패: $e');
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('데이터 새로고침 실패: $e')));
-                }
-              }
-            },
+          HaloAppBarAction(
+            icon: Icons.edit_outlined,
+            tooltip: l10n.actionEdit,
+            onPressed: _editCard,
           ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('명함 삭제'),
-                  content: Text('\'${card.fullName}\' 명함을 삭제하시겠습니까?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('취소'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text(
-                        '삭제',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-              if (confirm != true || !context.mounted) return;
-
-              try {
-                // 삭제 API 성공 후 목록 화면이 캐시에서 이 명함만 제거한다 (목록 재조회 없음)
-                await _businessCardService.deleteBusinessCard(card.id!);
-                if (!context.mounted) return;
-                Navigator.pop(context, {'deletedId': card.id});
-              } catch (e) {
-                print('[View] 명함 삭제 실패: $e');
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('명함 삭제 실패: $e')));
-              }
-            },
+          HaloAppBarAction(
+            icon: Icons.delete_outline,
+            tooltip: l10n.actionDelete,
+            tone: t.errText,
+            onPressed: _deleteCard,
           ),
+          const SizedBox(width: HaloSpace.sm),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          HaloSpace.screen,
+          topInset,
+          HaloSpace.screen,
+          HaloScaffold.contentBottomInset(context),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 명함 이미지 (최상단)
-            if (widget.businessCard.businessCardImageUrl != null &&
-                widget.businessCard.businessCardImageUrl!.isNotEmpty) ...[
-              const Text(
-                '명함 이미지',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            // ② 이 화면의 히어로 — 페이지당 1개.
+            HaloHero(
+              title: card.fullName,
+              subtitle: heroSubtitleParts.isEmpty
+                  ? null
+                  : heroSubtitleParts.join(' · '),
+              icon: Icons.badge_outlined,
+            ),
+
+            // 명함 이미지
+            if (hasImage) ...[
+              const SizedBox(height: HaloSpace.xxl),
+              HaloSectionHeading(
+                l10n.sectionCardImage,
+                icon: Icons.image_outlined,
               ),
-              const SizedBox(height: 16),
-              GestureDetector(
+              HaloCard(
                 onTap: _showBusinessCardImageDialog,
+                padding: const EdgeInsets.all(HaloSpace.md),
                 child: Container(
                   width: double.infinity,
                   height: 280,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
+                    color: t.surfaceAlt,
+                    borderRadius: HaloShape.input,
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: _cachedBusinessCardImage != null
-                        ? Image.file(
-                            _cachedBusinessCardImage!,
-                            width: double.infinity,
-                            height: 280,
-                            fit: BoxFit.contain,
-                          )
-                        : Image.network(
-                            card.businessCardImageUrl!,
-                            width: double.infinity,
-                            height: 280,
-                            fit: BoxFit.contain,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                height: 280,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    value:
-                                        loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes!
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _cachedBusinessCardImage != null
+                      ? Image.file(
+                          _cachedBusinessCardImage!,
+                          width: double.infinity,
+                          height: 280,
+                          fit: BoxFit.contain,
+                        )
+                      : Image.network(
+                          card.businessCardImageUrl!,
+                          width: double.infinity,
+                          height: 280,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ),
-              const SizedBox(height: 32),
             ],
 
             // 기본 정보
-            _buildInfoSection('기본 정보', [
-              if (card.fullName.isNotEmpty) _buildInfoItem('성명', card.fullName),
-            ]),
+            _InfoGroup(
+              title: l10n.infoBasic,
+              icon: Icons.person_outline,
+              rows: [
+                if (card.fullName.isNotEmpty)
+                  (l10n.labelFullName, card.fullName),
+              ],
+            ),
 
             // 연락처 정보
-            if (card.phone != null ||
-                card.email != null ||
-                card.website != null)
-              _buildInfoSection('연락처 정보', [
-                if (card.phone != null) _buildInfoItem('전화번호', card.phone!),
-                if (card.email != null) _buildInfoItem('이메일', card.email!),
-                if (card.website != null) _buildInfoItem('웹사이트', card.website!),
-              ]),
+            _InfoGroup(
+              title: l10n.infoContact,
+              icon: Icons.call_outlined,
+              rows: [
+                if (card.phone != null) (l10n.fieldPhone, card.phone!),
+                if (card.email != null) (l10n.fieldEmail, card.email!),
+                if (card.website != null) (l10n.fieldWebsite, card.website!),
+              ],
+            ),
 
             // 조직 정보
-            if (card.organization != null || card.title != null)
-              _buildInfoSection('조직 정보', [
+            _InfoGroup(
+              title: l10n.infoOrg,
+              icon: Icons.apartment_outlined,
+              rows: [
                 if (card.organization != null)
-                  _buildInfoItem('회사/조직', card.organization!),
-                if (card.title != null) _buildInfoItem('직책', card.title!),
-              ]),
+                  (l10n.labelCompany, card.organization!),
+                if (card.title != null) (l10n.labelJobTitle, card.title!),
+              ],
+            ),
 
             // 주소 정보
-            if (card.address != null)
-              _buildInfoSection('주소', [_buildInfoItem('주소', card.address!)]),
+            _InfoGroup(
+              title: l10n.infoAddress,
+              icon: Icons.place_outlined,
+              rows: [
+                if (card.address != null) (l10n.fieldAddress, card.address!),
+              ],
+            ),
 
             // 추가 정보
-            if (card.note != null)
-              _buildInfoSection('메모', [_buildInfoItem('메모', card.note!)]),
+            _InfoGroup(
+              title: l10n.infoNote,
+              icon: Icons.sticky_note_2_outlined,
+              rows: [if (card.note != null) (l10n.fieldNote, card.note!)],
+            ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: HaloSpace.xxl),
 
             // VCF 다운로드 QR코드
-            const Text(
-              'VCF 다운로드',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 16),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green[200]!),
-              ),
+            HaloSectionHeading(l10n.sectionShare, icon: Icons.qr_code_2),
+            HaloCard(
+              padding: const EdgeInsets.all(HaloSpace.lg),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '📱 연락처 정보를 휴대폰에 저장하세요',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        final vcfUrl = await _getVcfDownloadUrl();
-                        if (!mounted) return;
-                        _showQrCodeDialog(
-                          url: vcfUrl,
-                          title: 'VCF 다운로드 QR코드',
-                          description: 'QR코드를 스캔하여 연락처 정보를 다운로드하세요 (5분간 유효)',
-                        );
-                      } catch (e) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('QR코드 생성 실패: $e')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.qr_code),
-                    label: const Text(
-                      'VCF QR코드 보기',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                  Row(
+                    children: [
+                      const HaloIconBadge(
+                        icon: Icons.contact_phone_outlined,
+                        soft: true,
                       ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
+                      const SizedBox(width: HaloSpace.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.saveAsContactTitle,
+                              style: HaloType.value.copyWith(color: t.text),
+                            ),
+                            Text(
+                              l10n.saveAsContactBody,
+                              style: HaloType.label.copyWith(color: t.muted2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: HaloSpace.lg),
+                  // ② 이 화면의 유일한 주 버튼.
+                  HaloPrimaryButton(
+                    label: l10n.viewVcfQr,
+                    icon: Icons.qr_code,
+                    onPressed: _openVcfQrCode,
+                  ),
+
+                  // 이미지 다운로드 QR코드 (명함 이미지가 있는 경우에만)
+                  if (hasImage) ...[
+                    const SizedBox(height: HaloSpace.xl),
+                    Row(
+                      children: [
+                        const HaloIconBadge(
+                          icon: Icons.image_outlined,
+                          soft: true,
+                        ),
+                        const SizedBox(width: HaloSpace.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.sendCardImageTitle,
+                                style: HaloType.value.copyWith(color: t.text),
+                              ),
+                              Text(
+                                l10n.sendCardImageBody,
+                                style: HaloType.label.copyWith(color: t.muted2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: HaloSpace.lg),
+                    HaloSecondaryButton(
+                      label: l10n.viewImageQr,
+                      icon: Icons.qr_code,
+                      tone: t.point,
+                      onPressed: _openImageQrCode,
+                    ),
+                  ],
                 ],
               ),
             ),
 
-            // 이미지 다운로드 QR코드 (명함 이미지가 있는 경우에만)
-            if (widget.businessCard.businessCardImageUrl != null &&
-                widget.businessCard.businessCardImageUrl!.isNotEmpty) ...[
-              const SizedBox(height: 32),
-              const Text(
-                '이미지 다운로드',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 16),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      '📸 명함 이미지를 갤러리에 저장하세요',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final imageUrl = await _getImageDownloadUrl();
-                          if (!mounted) return;
-                          _showQrCodeDialog(
-                            url: imageUrl,
-                            title: '이미지 다운로드 QR코드',
-                            description: 'QR코드를 스캔하여 명함 이미지를 다운로드하세요 (5분간 유효)',
-                          );
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('QR코드 생성 실패: $e')),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.qr_code),
-                      label: const Text(
-                        '이미지 QR코드 보기',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.secondary,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
             // 등록일 정보
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Center(
-                child: Column(
-                  children: [
-                    Text(
-                      card.createdAt != null
-                          ? '${card.createdAt!.year}.${card.createdAt!.month}.${card.createdAt!.day}'
-                          : '-',
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const Text(
-                      '등록일',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF6C757D),
-                      ),
-                    ),
-                  ],
-                ),
+            const SizedBox(height: HaloSpace.xl),
+            Center(
+              child: Text(
+                card.createdAt != null
+                    ? l10n.createdOn(card.createdAt!)
+                    : l10n.createdOnUnknown,
+                style: HaloType.label.copyWith(color: t.muted2),
               ),
             ),
-
-            // 네비게이션 바와 겹치지 않도록 하단 여백 추가
-            const SizedBox(height: 80),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildInfoSection(String title, List<Widget> children) {
-    if (children.isEmpty) return const SizedBox.shrink();
+/// 라벨-값 묶음 한 덩어리. 값이 하나도 없으면 통째로 사라진다.
+class _InfoGroup extends StatelessWidget {
+  const _InfoGroup({
+    required this.title,
+    required this.icon,
+    required this.rows,
+  });
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 16),
-        ...children,
-        const SizedBox(height: 24),
-      ],
-    );
-  }
+  final String title;
+  final IconData icon;
+  final List<(String, String)> rows;
 
-  Widget _buildInfoItem(String label, String value) {
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) return const SizedBox.shrink();
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      padding: const EdgeInsets.only(top: HaloSpace.xxl),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF6C757D),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+          HaloSectionHeading(title, icon: icon),
+          HaloCard(
+            padding: const EdgeInsets.all(HaloSpace.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < rows.length; i++)
+                  HaloInfoRow(
+                    label: rows[i].$1,
+                    value: rows[i].$2,
+                    isLast: i == rows.length - 1,
+                  ),
+              ],
             ),
           ),
         ],

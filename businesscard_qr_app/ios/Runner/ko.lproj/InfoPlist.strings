@@ -1,0 +1,6 @@
+/* 홈 화면 아이콘 아래에 뜨는 이름 */
+"CFBundleDisplayName" = "명함QR";
+
+/* image_picker 권한 요청 문구 */
+"NSPhotoLibraryUsageDescription" = "명함에 넣을 사진을 고르려면 사진 접근 권한이 필요합니다.";
+"NSCameraUsageDescription" = "명함에 넣을 사진을 찍으려면 카메라 접근 권한이 필요합니다.";

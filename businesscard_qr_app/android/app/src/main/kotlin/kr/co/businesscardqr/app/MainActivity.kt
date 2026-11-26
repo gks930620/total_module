@@ -1,4 +1,4 @@
-package com.example.businesscard_qr
+package kr.co.businesscardqr.app
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

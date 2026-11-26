@@ -1,0 +1,15 @@
+/* Halo 전용 표현 — 토큰으로 표현되지 않는 것만. core/components.css 다음에 로드.
+   ① 아이콘 배지·아바타에 그라디언트  ② 히어로 안쪽 광원  ③ 유리 헤더 테두리 */
+
+.k-avatar, .k-item__icon, .k-row__rank {
+  background: var(--card-accent); color: #fff;
+}
+.k-hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(closest-side at 18% 12%, rgba(255, 255, 255, .32), transparent 70%),
+    radial-gradient(closest-side at 82% 88%, rgba(255, 255, 255, .18), transparent 70%);
+}
+.k-topnav, .k-appbar, .k-tabbar { border-color: var(--glass-edge, var(--border)); }
+.k-card::before { opacity: .85; }
+.k-card--hover:hover::before { opacity: 1; }

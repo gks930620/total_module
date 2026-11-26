@@ -60,3 +60,11 @@ supabase.exe
 supabase.tar.gz
 supabase_windows_amd64.zip
 supabase/
+
+# Android 릴리스 서명 — 절대 커밋 금지
+android/key.properties
+*.jks
+*.keystore
+
+# gen-l10n 생성물 — 빌드 때 자동 생성되므로 커밋하지 않는다 (l10n.yaml 기준)
+lib/l10n/app_localizations*.dart

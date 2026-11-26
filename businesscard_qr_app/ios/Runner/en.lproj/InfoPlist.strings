@@ -1,0 +1,6 @@
+/* 홈 화면 아이콘 아래에 뜨는 이름 */
+"CFBundleDisplayName" = "Businesscard QR";
+
+/* image_picker 권한 요청 문구 */
+"NSPhotoLibraryUsageDescription" = "Select a photo to use as your business card image.";
+"NSCameraUsageDescription" = "Take a photo to use as your business card image.";

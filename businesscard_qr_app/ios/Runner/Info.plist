@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Businesscard Qr</string>
+	<string>Businesscard QR</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,6 +22,53 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+
+	<!-- App Store 가 "지원 언어"로 표시하는 목록. Flutter 의 l10n(ARB) 목록과 같이 유지한다. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ko</string>
+		<string>ja</string>
+		<string>zh-Hans</string>
+		<string>es</string>
+		<string>de</string>
+	</array>
+
+	<!-- image_picker 가 쓰는 권한. 이 문구가 없으면 접근 순간 앱이 죽고, 심사에서도 리젝된다.
+	     문구는 ko.lproj/InfoPlist.strings 등에서 언어별로 덮어쓴다. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select a photo to use as your business card image.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo to use as your business card image.</string>
+
+	<!-- 카카오 로그인 — 카카오톡 앱으로 넘어갔다가 돌아오는 콜백 주소.
+	     스킴은 "kakao" + 네이티브 앱 키(카카오 앱 ID 1315157). Android 매니페스트와 같은 값이다. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>kakao</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakao7a62538fff918f35a41aa2db46c1fcbc</string>
+			</array>
+		</dict>
+	</array>
+	<!-- 카카오톡 설치 여부를 조회할 수 있게 허용 — 없으면 isKakaoTalkInstalled() 가 항상 false 라
+	     카카오톡 로그인이 안 뜨고 계정 로그인으로만 떨어진다. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
+		<string>kakaoplus</string>
+	</array>
+
+	<!-- 수출 규정 준수 — HTTPS(OS 표준 암호화)만 쓰므로 면제. 이 키가 없으면 업로드마다 묻는다. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

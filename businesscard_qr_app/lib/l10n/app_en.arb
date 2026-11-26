@@ -1,0 +1,186 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Businesscard QR",
+  "@appTitle": {
+    "description": "App title shown in the app bar and task switcher."
+  },
+
+  "actionCancel": "Cancel",
+  "actionClose": "Close",
+  "actionDelete": "Delete",
+  "actionSave": "Save",
+  "actionBack": "Back",
+  "actionEdit": "Edit",
+  "actionLogout": "Log out",
+  "actionRetry": "Try again",
+  "statusLoading": "Loading…",
+
+  "configErrorTitle": "Setup required",
+  "configErrorKakaoKeyMissing": "KAKAO_NATIVE_APP_KEY is not set (check .env).",
+
+  "loginTagline": "Share your business card with a QR code.",
+  "loginKakaoNotice": "Sign in with Kakao and your cards stay safely tied to your account.",
+  "loginWithKakao": "Continue with Kakao",
+  "loginFailed": "Sign-in failed: {error}",
+  "@loginFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "userSyncFailed": "Could not sync your account: {error}",
+  "@userSyncFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "logoutConfirmTitle": "Log out",
+  "logoutConfirmMessage": "Do you want to log out?",
+  "logoutFailed": "Log-out failed: {error}",
+  "@logoutFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "myCards": "My cards",
+  "cardsShareSubtitle": "{count, plural, =1{1 card ready to share by QR} other{{count} cards ready to share by QR}}",
+  "@cardsShareSubtitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "addCard": "Add a card",
+  "cardsLoadFailed": "Could not load your cards: {error}",
+  "@cardsLoadFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "emptyCardsTitle": "No cards yet",
+  "emptyCardsBody": "Tap [Add a card] above\nto create your first one.",
+
+  "formTitleCreate": "New card",
+  "formTitleEdit": "Edit card",
+  "sectionCardImage": "Card image",
+  "changeImage": "Change image",
+  "sectionBasicInfo": "Basics",
+  "fieldFullName": "Full name (saved to contacts)",
+  "hintFullName": "Jane Doe",
+  "validationFullNameRequired": "Please enter a name.",
+  "sectionContactInfo": "Contact",
+  "fieldPhone": "Phone",
+  "validationPhoneRequired": "Please enter a phone number.",
+  "fieldEmail": "Email",
+  "fieldWebsite": "Website",
+  "sectionOrgInfo": "Organization",
+  "fieldOrganization": "Company / organization",
+  "hintOrganization": "Example Inc.",
+  "fieldJobTitle": "Job title",
+  "hintJobTitle": "Engineering Lead",
+  "sectionAddressInfo": "Address",
+  "fieldAddress": "Address",
+  "hintAddress": "123 Main St, Springfield",
+  "sectionExtraInfo": "More",
+  "fieldNote": "Note",
+  "hintNote": "Anything else you want to share",
+  "sourceCamera": "Camera",
+  "sourceGallery": "Gallery",
+  "imagePickerTitle": "Add a card image",
+  "imagePickerBody": "Take a photo or pick one from your gallery.",
+  "cardSaved": "Card saved.",
+  "cardUpdated": "Card updated.",
+  "saveFailed": "Something went wrong while saving: {error}",
+  "@saveFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "refreshFailed": "Could not refresh: {error}",
+  "@refreshFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "deleteCardTitle": "Delete card",
+  "deleteCardMessage": "Delete the card for ‘{name}’?",
+  "@deleteCardMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deleteCardFailed": "Could not delete the card: {error}",
+  "@deleteCardFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "vcfQrTitle": "Contact download QR",
+  "vcfQrDescription": "Scan this code to download the contact details (valid for 5 minutes).",
+  "imageQrTitle": "Image download QR",
+  "imageQrDescription": "Scan this code to download the card image (valid for 5 minutes).",
+  "qrCreateFailed": "Could not create the QR code: {error}",
+  "@qrCreateFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "infoBasic": "Basics",
+  "labelFullName": "Name",
+  "infoContact": "Contact",
+  "infoOrg": "Organization",
+  "labelCompany": "Company / organization",
+  "labelJobTitle": "Job title",
+  "infoAddress": "Address",
+  "infoNote": "Note",
+  "sectionShare": "Share",
+  "saveAsContactTitle": "Save to contacts",
+  "saveAsContactBody": "Scanning the code saves your details to their phone.",
+  "viewVcfQr": "Show contact QR",
+  "sendCardImageTitle": "Send the card image",
+  "sendCardImageBody": "Scanning the code saves the card image to their gallery.",
+  "viewImageQr": "Show image QR",
+  "createdOn": "Added {date}",
+  "@createdOn": {
+    "placeholders": {
+      "date": { "type": "DateTime", "format": "yMd" }
+    }
+  },
+  "createdOnUnknown": "Added —",
+
+  "errorTimeout": "The server isn’t responding. Please try again in a moment.",
+  "errorServerWaking": "The server is waking up. Please try again in a moment.",
+  "errorServer": "Server error ({statusCode}).",
+  "@errorServer": {
+    "placeholders": { "statusCode": { "type": "int" } }
+  },
+  "errorNetwork": "Can’t reach the network. Check your connection.",
+  "errorUnsupportedImage": "That image format isn’t supported (jpg, png, gif, bmp, webp).",
+  "errorImageDownload": "Could not download the image.",
+  "errorStorageDenied": "No permission to use device storage.",
+  "errorUnknown": "Something went wrong.",
+
+  "proTitle": "Pro",
+  "proActive": "Pro active",
+  "cardCountUsage": "{used} of {limit} cards used",
+  "@cardCountUsage": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "limit": { "type": "int" }
+    }
+  },
+  "cardLimitReachedTitle": "You’ve used all {limit} free cards",
+  "@cardLimitReachedTitle": {
+    "placeholders": { "limit": { "type": "int" } }
+  },
+  "cardLimitReachedBody": "Upgrade to Pro to create unlimited cards.",
+  "upgradeToPro": "Upgrade to Pro",
+  "proBenefitUnlimited": "Unlimited business cards",
+  "restorePurchases": "Restore purchases",
+  "purchasePending": "Confirming your purchase…",
+  "purchaseSucceeded": "You’re on Pro now.",
+  "purchaseCancelled": "Purchase cancelled.",
+  "purchaseFailed": "Purchase failed: {error}",
+  "@purchaseFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "purchaseRestored": "Your purchase was restored.",
+  "purchaseNothingToRestore": "There was nothing to restore.",
+  "storeUnavailable": "Can’t reach the store right now.",
+  "priceLoadFailed": "Could not load the product details.",
+  "errorCardLimitExceeded": "You've used every card on the free plan.",
+  "errorPurchaseUnavailable": "Purchases aren't available on this device.",
+
+  "deleteAccountAction": "Delete account",
+  "deleteAccountTitle": "Delete your account?",
+  "deleteAccountMessage": "Your account and every card you created will be deleted permanently. Payment records are kept for a limited period as required by law.",
+  "deleteAccountConfirm": "Delete",
+  "deleteAccountSucceeded": "Your account has been deleted.",
+  "deleteAccountFailed": "Couldn't delete your account: {error}",
+  "@deleteAccountFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  }
+}

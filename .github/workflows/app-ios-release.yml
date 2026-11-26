@@ -1,0 +1,156 @@
+# businesscard_qr 앱 — App Store Connect(TestFlight) 업로드용 IPA 빌드
+#
+# Windows 에서는 Xcode 아카이브가 불가능해서 macOS 러너로 돌린다.
+# 실행 방법: Actions 탭에서 "Run workflow" (수동). 태그를 밀면 자동으로도 돈다.
+#
+# 필요한 GitHub Secrets:
+#   IOS_CERTIFICATE_P12_BASE64   배포용 인증서(.p12)를 base64 인코딩한 값
+#                                Apple Developer > Certificates > Apple Distribution 에서 발급 후 키체인에서 내보내기
+#   IOS_CERTIFICATE_PASSWORD     .p12 내보낼 때 건 비밀번호
+#   IOS_PROVISIONING_PROFILE_BASE64  App Store 배포용 프로비저닝 프로파일(.mobileprovision) base64
+#   IOS_TEAM_ID                  Apple Developer 팀 ID (10자리)
+#   APPSTORE_ISSUER_ID           App Store Connect API 키의 Issuer ID
+#   APPSTORE_KEY_ID              App Store Connect API 키 ID
+#   APPSTORE_PRIVATE_KEY         App Store Connect API 개인키(.p8) 내용 전체
+#   APP_ENV_FILE                 앱 .env 파일 전체 내용
+#
+# 번들 ID 는 kr.co.businesscardqr.app — 프로파일도 같은 ID 로 만들어야 한다.
+name: App · iOS release (TestFlight)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "CFBundleVersion (업로드마다 커져야 한다)"
+        required: true
+        default: "1"
+      build_name:
+        description: "CFBundleShortVersionString (예: 1.0.0)"
+        required: true
+        default: "1.0.0"
+      upload:
+        description: "TestFlight 까지 업로드할지"
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "app-v*"
+
+concurrency:
+  group: app-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: businesscard_qr_app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - name: Write .env
+        run: printf '%s\n' "${{ secrets.APP_ENV_FILE }}" > .env
+
+      # 서명 재료를 임시 키체인에 넣는다. 러너는 매번 새로 뜨므로 정리는 형식적이지만 그래도 지운다.
+      - name: Install signing certificate & profile
+        env:
+          CERT_B64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN=$RUNNER_TEMP/build.keychain
+          KEYCHAIN_PASSWORD=$(uuidgen)
+
+          echo "$CERT_B64" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          echo "$PROFILE_B64" | base64 -d > "$RUNNER_TEMP/profile.mobileprovision"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A \
+            -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" \
+            /dev/stdin <<< "$(security cms -D -i "$RUNNER_TEMP/profile.mobileprovision")")
+          cp "$RUNNER_TEMP/profile.mobileprovision" \
+            ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID".mobileprovision
+          echo "PROFILE_UUID=$UUID" >> "$GITHUB_ENV"
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      # ExportOptions — 배포 방식과 서명 방법을 Xcode 에 알려 준다.
+      - name: Write ExportOptions.plist
+        run: |
+          cat > ios/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${{ secrets.IOS_TEAM_ID }}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>uploadSymbols</key><true/>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>kr.co.businesscardqr.app</key>
+              <string>${PROFILE_UUID}</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build IPA
+        run: |
+          flutter build ipa --release \
+            --build-name="${{ inputs.build_name || '1.0.0' }}" \
+            --build-number="${{ inputs.build_number || github.run_number }}" \
+            --export-options-plist=ios/ExportOptions.plist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-ipa
+          path: businesscard_qr_app/build/ios/ipa/*.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      # App Store Connect API 키로 업로드 — Apple ID/비밀번호를 쓰지 않는다(2FA 때문에 CI 에서 불가).
+      - name: Upload to TestFlight
+        if: ${{ inputs.upload != false }}
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s\n' "${{ secrets.APPSTORE_PRIVATE_KEY }}" \
+            > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+          IPA=$(ls build/ios/ipa/*.ipa | head -1)
+          xcrun altool --upload-app --type ios --file "$IPA" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Clean secrets
+        if: always()
+        run: |
+          rm -f .env ios/ExportOptions.plist
+          rm -f ~/.appstoreconnect/private_keys/*.p8 || true
+          security delete-keychain "$RUNNER_TEMP/build.keychain" || true

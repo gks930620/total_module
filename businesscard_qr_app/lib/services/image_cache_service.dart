@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'app_exception.dart';
 
 class ImageCacheService {
   static final ImageCacheService _instance = ImageCacheService._internal();
@@ -13,13 +14,12 @@ class ImageCacheService {
   static const String _cacheFolderName = 'image_cache';
   static const Duration _cacheExpiration = Duration(days: 7);
   static const Duration _downloadTimeout = Duration(seconds: 60);
-  static const String _timeoutMessage = '서버 응답이 없습니다. 잠시 후 다시 시도해주세요.';
 
   /// 캐시된 이미지 파일 경로를 반환하거나 네트워크에서 다운로드
   Future<File?> getCachedImage(String imageUrl) async {
     try {
       final cacheFile = await _getCacheFile(imageUrl);
-      
+
       // 캐시된 파일이 존재하고 만료되지 않았다면 반환
       if (await cacheFile.exists()) {
         final stat = await cacheFile.stat();
@@ -41,18 +41,25 @@ class ImageCacheService {
 
   /// 특정 이미지를 디바이스에 다운로드 (갤러리에 저장)
   // TODO: UI 연결 예정
-  Future<String> downloadImageToGallery(String imageUrl, String fileName) async {
+  Future<String> downloadImageToGallery(
+    String imageUrl,
+    String fileName,
+  ) async {
     try {
-      final response =
-          await http.get(Uri.parse(imageUrl)).timeout(_downloadTimeout);
+      final response = await http
+          .get(Uri.parse(imageUrl))
+          .timeout(_downloadTimeout);
       if (response.statusCode != 200) {
-        throw Exception('이미지 다운로드 실패: ${response.statusCode}');
+        throw AppException(
+          AppErrorReason.imageDownload,
+          statusCode: response.statusCode,
+        );
       }
 
       // Downloads 디렉토리 가져오기
       final directory = await getExternalStorageDirectory();
       if (directory == null) {
-        throw Exception('저장소 접근 권한이 없습니다');
+        throw const AppException(AppErrorReason.storageDenied);
       }
 
       // Downloads 폴더 생성
@@ -67,9 +74,11 @@ class ImageCacheService {
 
       return file.path;
     } on TimeoutException {
-      throw Exception(_timeoutMessage);
+      throw const AppException(AppErrorReason.timeout);
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('이미지 다운로드 실패: $e');
+      throw AppException(AppErrorReason.imageDownload, cause: e);
     }
   }
 
@@ -84,11 +93,11 @@ class ImageCacheService {
   Future<Directory> _getCacheDirectory() async {
     final appDir = await getApplicationDocumentsDirectory();
     final cacheDir = Directory('${appDir.path}/$_cacheFolderName');
-    
+
     if (!await cacheDir.exists()) {
       await cacheDir.create(recursive: true);
     }
-    
+
     return cacheDir;
   }
 
@@ -103,8 +112,9 @@ class ImageCacheService {
   /// 네트워크에서 이미지 다운로드 및 캐시
   Future<File?> _downloadAndCacheImage(String imageUrl, File cacheFile) async {
     try {
-      final response =
-          await http.get(Uri.parse(imageUrl)).timeout(_downloadTimeout);
+      final response = await http
+          .get(Uri.parse(imageUrl))
+          .timeout(_downloadTimeout);
       if (response.statusCode == 200) {
         await cacheFile.writeAsBytes(response.bodyBytes);
         return cacheFile;
@@ -120,14 +130,14 @@ class ImageCacheService {
     try {
       final cacheDir = await _getCacheDirectory();
       int totalSize = 0;
-      
+
       await for (final entity in cacheDir.list()) {
         if (entity is File) {
           final stat = await entity.stat();
           totalSize += stat.size;
         }
       }
-      
+
       return totalSize;
     } catch (e) {
       return 0;
@@ -138,7 +148,7 @@ class ImageCacheService {
   Future<void> clearExpiredCache() async {
     try {
       final cacheDir = await _getCacheDirectory();
-      
+
       await for (final entity in cacheDir.list()) {
         if (entity is File) {
           final stat = await entity.stat();
@@ -156,7 +166,7 @@ class ImageCacheService {
   Future<void> clearAllCache() async {
     try {
       final cacheDir = await _getCacheDirectory();
-      
+
       await for (final entity in cacheDir.list()) {
         await entity.delete();
       }
