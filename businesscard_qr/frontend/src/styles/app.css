@@ -1,0 +1,274 @@
+/*
+ * 명함QR 웹 — 디자인 킷(Halo)에 없는 것만 최소로.
+ *
+ * 규칙(design_halo/클래스-목록.md §11):
+ *   - 화면은 먼저 .k-* 조합으로 만든다. 여기는 킷에 없는 조각만.
+ *   - 색·크기는 var(--토큰) 만. 새 값이 꼭 필요하면 :root 에 토큰으로 정의하고 라이트·다크 두 벌을 준다.
+ *   - 접두사는 bq- (명함QR) — .k-* 와 섞이지 않게.
+ *   - 킷 파일(design-kit.css)은 고치지 않는다. 덮어쓰려면 여기서.
+ */
+
+/* ── 브랜드 토큰 — 킷에 없는 값 ───────────────────────────────────────── */
+:root {
+  /* 카카오 로그인 버튼은 카카오 디자인 가이드가 색을 정한다. 테마와 무관하게 같은 값이다. */
+  --kakao-bg: #fee500;
+  --kakao-fg: rgba(0, 0, 0, .85);
+  /* 데스크톱에서 앱 칼럼 폭 — 킷의 본문 최대폭(1180px)의 절반. 명함 목록엔 이 폭이 가장 읽기 좋다. */
+  --bq-column: calc(var(--content-max) / 2);
+}
+:root[data-theme="dark"] {
+  --kakao-bg: #fee500;
+  --kakao-fg: rgba(0, 0, 0, .85);
+}
+
+/* ── 레이아웃 ─────────────────────────────────────────────────────────── */
+
+/* 폰 앱 모양을 데스크톱에서 1920px 로 늘리지 않고 가운데 칼럼으로 묶는다. */
+.bq-column {
+  width: 100%;
+  max-width: var(--bq-column);
+  margin-inline: auto;
+}
+.k-appbar > .bq-column { gap: var(--sp-3); }
+.bq-appbar-row { flex-wrap: nowrap; align-items: center; }
+
+/* 이 앱엔 하단 탭바가 없다. 킷의 .k-app-main 은 탭바 자리만큼 아래를 비우는데, 그 자리는 FAB 가 쓴다. */
+.bq-center { text-align: center; justify-content: center; }
+.bq-preline { white-space: pre-line; }
+.bq-break { overflow-wrap: anywhere; }
+.bq-required { color: var(--err-text); }
+.bq-danger-text, .bq-danger-text .k-item__title { color: var(--err-text); }
+
+.bq-section-title {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  color: var(--muted);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-tracking);
+}
+
+/* ── FAB — 킷은 탭바·절대배치 컨테이너를 전제한다. 스크롤하는 웹에선 화면에 고정한다. ── */
+.k-app .k-fab {
+  position: fixed;
+  bottom: calc(var(--sp-6) + env(safe-area-inset-bottom));
+  /* 데스크톱에서도 칼럼 오른쪽 끝에 붙어 있게 — 창 끝까지 멀어지지 않는다 */
+  right: max(var(--sp-4), calc(50vw - var(--bq-column) / 2 + var(--sp-4)));
+}
+
+/* ── 바텀시트 — 킷의 .k-sheet 를 화면 고정 레이어 위에 띄운다 ── */
+.bq-sheet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--overlay);
+}
+.bq-sheet-layer .bq-sheet {
+  margin-inline: auto;
+  max-width: var(--bq-column);
+  padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom));
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.bq-sheet-section { padding-top: var(--sp-4); }
+.bq-item-button {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: var(--bw) solid var(--border);
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.bq-plain-list { list-style: none; margin: 0; padding: 0; }
+
+/* ── 토스트 — 킷에 없어 .k-alert 를 화면 아래에 띄운다 ── */
+.bq-toast-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--sp-6) + env(safe-area-inset-bottom));
+  z-index: 300;
+  display: flex;
+  justify-content: center;
+  padding-inline: var(--sp-4);
+  pointer-events: none;
+}
+.bq-toast {
+  max-width: var(--bq-column);
+  width: 100%;
+  box-shadow: var(--sh-3);
+  pointer-events: auto;
+}
+
+/* ── 목록 행 ─────────────────────────────────────────────────────────── */
+.bq-item-icon {
+  width: var(--touch);
+  height: var(--touch);
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--point-soft);
+  color: var(--point-text);
+  flex: none;
+}
+/* 킷의 .k-item__icon 은 32px 고정이라 46px 아바타가 행 밖으로 넘친다 — 썸네일일 땐 내용 크기를 따른다 */
+.bq-item-thumb { width: auto; height: auto; background: none; padding: 0; }
+
+.bq-thumb {
+  display: block;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--surface-alt);
+}
+.bq-thumb--md { width: var(--touch); height: var(--touch); }
+.bq-thumb--lg, .bq-avatar--lg { width: calc(var(--touch) * 1.5); height: calc(var(--touch) * 1.5); }
+.bq-thumb--xl, .bq-avatar--xl { width: calc(var(--touch) * 2); height: calc(var(--touch) * 2); }
+.bq-avatar--md { width: var(--touch); height: var(--touch); }
+.bq-avatar--lg { font-size: var(--t-xl); }
+.bq-avatar--xl { font-size: var(--t-2xl); }
+
+/* ── 명함 이미지 ─────────────────────────────────────────────────────── */
+.bq-card-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: contain;
+  background: var(--surface-alt);
+  border-radius: var(--r-lg);
+  border: var(--bw) solid var(--border);
+}
+.bq-card-image--hero { border: 0; background: transparent; }
+
+.bq-image-drop {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--sp-2);
+  background: var(--surface-alt);
+  border: var(--bw) dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.bq-image-drop:hover { background: var(--surface-hover); color: var(--text); }
+
+.bq-identity { display: flex; align-items: center; gap: var(--sp-4); }
+.bq-identity-name { margin: 0; font-size: var(--t-xl); }
+/* 띄어쓰기 없는 아주 긴 이름·직함도 화면을 가로로 밀어내지 않게 — flex 자식은 기본 min-width 가
+   글자 폭이라 줄어들지 못한다(QA 2026-11-26 결함 5) */
+.bq-identity > div { min-width: 0; }
+.bq-identity-name, .bq-identity p { overflow-wrap: anywhere; }
+
+/* ── 공유 ─────────────────────────────────────────────────────────────── */
+.bq-mono-input { font-family: var(--font-mono); font-size: var(--t-sm); }
+.bq-qr-block { align-items: center; }
+/* QR 은 흰 바탕 고정(SVG 안에 있다). 테두리만 테마를 따른다. */
+.bq-qr {
+  width: 100%;
+  max-width: calc(var(--sp-10) * 6);
+  height: auto;
+  border-radius: var(--r);
+  border: var(--bw) solid var(--border);
+  image-rendering: pixelated; /* 확대돼도 모듈 경계가 흐려지지 않게 — 인식률 */
+}
+.bq-detail-actions { justify-content: center; }
+.bq-alert-body { margin: var(--sp-1) 0 0; }
+/* 긴 문장이 아이콘 아래로 줄바꿈되지 않게 — 아이콘은 고정, 글자만 접힌다 */
+.bq-benefit { align-items: center; gap: var(--sp-3); flex-wrap: nowrap; }
+.bq-benefit > .bq-item-icon { flex: none; }
+.bq-benefit > :last-child { flex: 1; min-width: 0; }
+
+/* ── 로그인 ───────────────────────────────────────────────────────────── */
+.bq-login { padding-top: var(--sp-8); }
+.bq-login-hero { text-align: center; }
+.bq-login-mark { display: block; margin: 0 auto var(--sp-4); border-radius: var(--r-lg); }
+
+.bq-kakao {
+  background: var(--kakao-bg);
+  color: var(--kakao-fg);
+  border-color: transparent;
+  box-shadow: none;
+  gap: var(--sp-2);
+}
+.bq-kakao:hover { background: var(--kakao-bg); color: var(--kakao-fg); filter: brightness(.97); }
+.bq-kakao-symbol { flex: none; }
+
+.bq-legal {
+  text-align: center;
+  font-size: var(--t-sm);
+  color: var(--muted2);
+  padding-block: var(--sp-4);
+}
+.bq-legal a { color: var(--muted); }
+
+/* 사업자 정보 — 작고 흐리게, 그러나 빠짐없이(표시 의무) */
+.bq-biz {
+  margin: var(--sp-3) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-1) var(--sp-3);
+  font-size: var(--t-xs);
+  color: var(--muted2);
+}
+.bq-biz div { display: flex; gap: var(--sp-1); }
+.bq-biz dt { font-weight: var(--w-medium); }
+.bq-biz dd { margin: 0; }
+
+/* ── 프로·결제 ───────────────────────────────────────────────────────── */
+.bq-pricing p { margin: 0; }
+.bq-price {
+  margin: var(--sp-2) 0 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.bq-price strong {
+  font-family: var(--font-display);
+  font-size: var(--t-2xl);
+  letter-spacing: var(--display-tracking);
+}
+.bq-fineprint { margin: 0; }
+.bq-result { text-align: center; }
+.bq-result-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--sp-3);
+  border-radius: var(--r-pill);
+}
+.bq-result-mark--ok { background: var(--ok-soft); color: var(--ok-text); }
+
+/* ── 공개 명함 ────────────────────────────────────────────────────────── */
+.bq-public { padding-top: var(--sp-4); }
+.bq-public-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.bq-public-hero { display: grid; justify-items: center; text-align: center; gap: var(--sp-3); }
+.bq-public-hero h1 { margin: 0; }
+.bq-public-hero p { margin: 0; }
+/* 긴 이름이 잘리거나 직함·회사 줄을 밀어내지 않게(QA 2026-11-26 결함 5) */
+.bq-public-hero > * { min-width: 0; max-width: 100%; }
+.bq-public-hero h1, .bq-public-hero p { overflow-wrap: anywhere; }
+.bq-public-footer { padding-block: var(--sp-6); align-items: center; }
+.bq-lang-compact .k-select { width: auto; padding-block: var(--sp-1); font-size: var(--t-sm); }
+
+/* ── 설치 안내 ────────────────────────────────────────────────────────── */
+.bq-install-row { align-items: center; flex-wrap: nowrap; }
+.bq-install p { margin: 0; font-size: var(--t-sm); }
+
+/* ── 로딩 자리 ───────────────────────────────────────────────────────── */
+.bq-skeleton-hero { height: calc(var(--touch) * 3); border-radius: var(--r-lg); }
+.bq-skeleton-row { height: calc(var(--touch) + var(--sp-4)); border-radius: var(--r); }
+
+.bq-list-hero { border-radius: var(--r-lg); }

@@ -94,6 +94,11 @@ public class JwtTokenProvider {
         return accessTokenValiditySeconds;
     }
 
+    /** 웹 refresh 쿠키의 Max-Age 를 토큰 수명과 같게 맞추는 데 쓴다. */
+    public long getRefreshTokenValiditySeconds() {
+        return refreshTokenValiditySeconds;
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)

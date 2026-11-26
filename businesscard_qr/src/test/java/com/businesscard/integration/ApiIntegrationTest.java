@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -419,6 +420,76 @@ class ApiIntegrationTest {
                 .andReturn();
 
         assertThat(downloadResult.getResponse().getContentAsByteArray()).isEqualTo(imageBytes);
+    }
+
+    @Test
+    void downloadVcf_doesNotLetInputInjectVCardProperties() throws Exception {
+        // 명함은 QR 로 남에게 공유된다. 입력값에 줄바꿈을 넣어 vCard 속성을 끼워 넣을 수 있으면,
+        // 스캔한 사람의 연락처에 화면에 없던 전화번호·URL 이 저장된다(연락처 위조).
+        String cardId = UUID.randomUUID().toString();
+        businessCardRepository.save(BusinessCardEntity.builder()
+                .id(cardId)
+                .userId(TEST_USER_ID)
+                .fullName("주입시도")
+                // CR·LF·CRLF 세 형태 모두 시도한다.
+                .note("정상메모\rURL:http://evil.example\r\nTEL:010-9999-9999\nEMAIL:evil@example.com")
+                .build());
+
+        MvcResult tokenResult = mockMvc.perform(get("/api/business-cards/{cardId}/vcf-download-url", cardId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String token = extractToken(readJson(tokenResult).path("data").path("url").asText());
+
+        MvcResult downloadResult = mockMvc.perform(get("/api/business-cards/{cardId}/downloads/vcf", cardId)
+                        .param("token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = downloadResult.getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        // 주입된 값이 새 줄(=새 속성)로 서지 않아야 한다. 값 안에 이스케이프된 채로만 남는다.
+        assertThat(body.lines())
+                .noneMatch(line -> line.startsWith("URL:"))
+                .noneMatch(line -> line.startsWith("TEL:"))
+                .noneMatch(line -> line.startsWith("EMAIL:"));
+        // 메모 자체는 정상적으로 실려 있어야 한다(과하게 지워버리면 그것도 버그다).
+        assertThat(body).contains("NOTE:정상메모");
+    }
+
+    @Test
+    void createBusinessCard_rejectsOverlongField_withBadRequest() throws Exception {
+        // 컬럼 길이를 넘는 값은 DB 제약 위반(409)이 아니라 입력 검증 실패(400)로 걸러져야 한다.
+        String tooLongNote = "가".repeat(501);
+        MockMultipartFile payload = new MockMultipartFile(
+                "payload",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(java.util.Map.of(
+                        "full_name", "길이초과",
+                        "note", tooLongNote))
+        );
+
+        mockMvc.perform(multipart("/api/business-cards")
+                        .file(payload)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+
+        assertThat(businessCardRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void storeRequiredPages_arePubliclyReachable() throws Exception {
+        // 두 페이지 모두 스토어 콘솔에 URL 로 제출하는 필수 문서다.
+        // 인증에 막히면 심사자가 열지 못해 반려된다 — SecurityConfig 를 조일 때 여기서 잡는다.
+        mockMvc.perform(get("/privacy.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<html")));
+
+        mockMvc.perform(get("/account-deletion.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<html")));
     }
 
     @Test

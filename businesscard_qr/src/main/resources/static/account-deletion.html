@@ -1,0 +1,229 @@
+<!doctype html>
+<!--
+  ============================================================================
+  계정 삭제 안내 — Google Play 필수 페이지.
+
+  Play Console 은 계정을 만들 수 있는 앱에 대해 두 가지를 모두 요구한다:
+    ① 앱 안에서 계정을 지울 수 있는 경로  → 목록 화면 ⋮ 메뉴 > 회원 탈퇴
+    ② 앱을 설치하지 않고도 볼 수 있는 웹 페이지 → 이 문서
+
+  Play Console 입력 위치: 앱 콘텐츠 > 데이터 보안 > 계정 삭제 URL
+  URL: https://businesscardqr-production.up.railway.app/account-deletion.html
+
+  배포 전에 [[연락처 이메일]] 을 반드시 채울 것.
+  ============================================================================
+-->
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>계정 삭제 · 명함QR</title>
+  <meta name="description" content="명함QR(Businesscard QR) 계정 삭제 방법 / How to delete your account">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/design-kit/design-kit.css">
+  <!-- 인라인 스크립트는 CSP(script-src 'self')에 막힌다 — 파일로 싣는다 -->
+  <script src="/legal.js" defer></script>
+  <style>
+    .doc h2 { margin: 0 0 var(--sp-4); font-size: var(--t-lg); }
+    .doc p, .doc li { color: var(--muted); line-height: var(--lh); }
+    .doc ol, .doc ul { margin: 0 0 var(--sp-3); padding-left: var(--sp-5); }
+    .doc li { margin-bottom: var(--sp-2); }
+    .doc [hidden] { display: none; }
+    .langbar { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<div class="k-shell">
+
+  <header class="k-topnav">
+    <a class="k-topnav__logo" href="/">명함QR</a>
+    <span class="k-spacer"></span>
+    <nav class="langbar" aria-label="Language">
+      <button class="k-btn k-btn--ghost k-btn--sm" data-set-lang="ko" aria-pressed="true">한국어</button>
+      <button class="k-btn k-btn--ghost k-btn--sm" data-set-lang="en" aria-pressed="false">English</button>
+    </nav>
+  </header>
+
+  <main class="k-main doc">
+
+    <!-- ─────────────────────────── 한국어 ─────────────────────────── -->
+    <div data-lang="ko">
+      <h1 class="k-page-title">계정 삭제</h1>
+      <p class="k-page-desc">
+        명함QR 계정과 저장된 데이터를 삭제하는 방법을 안내합니다.
+      </p>
+
+      <section class="k-section">
+        <h2>명함QR에서 직접 삭제하기 (가장 빠름)</h2>
+        <ol>
+          <li>명함QR에 로그인합니다.</li>
+          <li><strong>내 명함</strong> 화면 오른쪽 위의 <strong>⋮</strong> 버튼을 누릅니다.</li>
+          <li><strong>회원 탈퇴</strong>를 선택합니다.</li>
+          <li>안내 문구를 확인한 뒤 <strong>탈퇴하기</strong>를 누릅니다.</li>
+        </ol>
+        <p>탈퇴는 즉시 처리되며, 별도의 승인 절차가 없습니다.</p>
+      </section>
+
+      <section class="k-section">
+        <h2>앱 없이 요청하기</h2>
+        <p>
+          앱을 이미 삭제하셨거나 로그인할 수 없다면 아래 주소로 요청해 주세요.
+          카카오 계정에 등록된 이메일 주소를 함께 알려주시면 본인 확인 후 처리해 드립니다.
+        </p>
+        <div class="k-alert k-alert--point">
+          <strong>[[연락처 이메일]]</strong>
+        </div>
+        <p>요청을 받은 날로부터 <strong>10일 이내</strong>에 처리하고 결과를 회신합니다.</p>
+      </section>
+
+      <section class="k-section">
+        <h2>삭제되는 데이터</h2>
+        <div class="k-tablewrap">
+          <table class="k-table">
+            <thead>
+            <tr><th>항목</th><th>처리</th></tr>
+            </thead>
+            <tbody>
+            <tr><td>계정 정보 (카카오 회원번호, 이메일, 닉네임)</td><td>즉시 삭제</td></tr>
+            <tr><td>등록한 명함 전체 (이름·연락처·회사 정보 등)</td><td>즉시 삭제</td></tr>
+            <tr><td>업로드한 명함 이미지 파일</td><td>즉시 삭제</td></tr>
+            <tr><td>명함 조회수·이용 기록</td><td>즉시 삭제</td></tr>
+            <tr>
+              <td>결제·거래 기록</td>
+              <td>
+                <strong>5년간 보관</strong><br>
+                「전자상거래 등에서의 소비자보호에 관한 법률」이 대금결제 기록의 보관을 의무화하고 있어
+                삭제할 수 없습니다. 이 기록은 다른 목적으로 이용되지 않습니다.
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          삭제된 계정과 명함은 <strong>복구할 수 없습니다.</strong>
+          필요한 명함이 있다면 탈퇴 전에 QR 또는 연락처 파일로 저장해 두시기 바랍니다.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>프로 평생 이용권을 구매했다면</h2>
+        <p>
+          계정을 삭제해도 평생 이용권은 <strong>자동으로 환불되지 않습니다.</strong>
+          환불은 <a href="/terms.html?lang=ko#refund">이용약관의 환불 규정</a>(결제 후 7일 이내 등)을 따르니, 필요하면 탈퇴 전에 먼저 요청해 주세요.
+          결제 기록은 법령에 따라 5년간 보관되며, 그 기간 안에 같은 카카오 계정으로 다시 가입하면 이용권이 다시 적용됩니다.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>앱에서 구독을 이용 중이라면</h2>
+        <p>
+          계정을 삭제해도 <strong>스토어 구독은 자동으로 해지되지 않습니다.</strong>
+          결제가 계속되지 않도록 아래에서 직접 해지해 주세요.
+        </p>
+        <ul>
+          <li><strong>Android</strong> — Google Play 앱 → 프로필 → 결제 및 정기 결제 → 정기 결제</li>
+          <li><strong>iPhone·iPad</strong> — 설정 → [내 이름] → 구독</li>
+        </ul>
+      </section>
+
+      <p class="k-muted">
+        개인정보 처리에 대한 전체 내용은 <a href="/privacy.html">개인정보처리방침</a>을 확인해 주세요.
+      </p>
+    </div>
+
+    <!-- ─────────────────────────── English ─────────────────────────── -->
+    <div data-lang="en" hidden>
+      <h1 class="k-page-title">Delete your account</h1>
+      <p class="k-page-desc">
+        How to delete your Businesscard QR account and the data stored with it.
+      </p>
+
+      <section class="k-section">
+        <h2>Delete it yourself in Businesscard QR (fastest)</h2>
+        <ol>
+          <li>Open Businesscard QR and sign in.</li>
+          <li>On the <strong>My cards</strong> screen, tap <strong>⋮</strong> in the top right.</li>
+          <li>Choose <strong>Delete account</strong>.</li>
+          <li>Read the confirmation and tap <strong>Delete</strong>.</li>
+        </ol>
+        <p>Deletion happens immediately — there is no approval step.</p>
+      </section>
+
+      <section class="k-section">
+        <h2>Request it without the app</h2>
+        <p>
+          If you have already uninstalled the app or cannot sign in, email us at the address below.
+          Include the email address linked to your Kakao account so we can verify it is you.
+        </p>
+        <div class="k-alert k-alert--point">
+          <strong>[[연락처 이메일]]</strong>
+        </div>
+        <p>We act on the request and reply <strong>within 10 days</strong>.</p>
+      </section>
+
+      <section class="k-section">
+        <h2>What gets deleted</h2>
+        <div class="k-tablewrap">
+          <table class="k-table">
+            <thead>
+            <tr><th>Data</th><th>What happens</th></tr>
+            </thead>
+            <tbody>
+            <tr><td>Account details (Kakao identifier, email, nickname)</td><td>Deleted immediately</td></tr>
+            <tr><td>Every business card you created</td><td>Deleted immediately</td></tr>
+            <tr><td>Card images you uploaded</td><td>Deleted immediately</td></tr>
+            <tr><td>View counts and usage records</td><td>Deleted immediately</td></tr>
+            <tr>
+              <td>Payment and transaction records</td>
+              <td>
+                <strong>Kept for 5 years</strong><br>
+                The Korean Act on Consumer Protection in Electronic Commerce requires us to retain
+                payment records, so they cannot be deleted. They are not used for anything else.
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Deleted accounts and cards <strong>cannot be recovered.</strong>
+          Save any card you still need — as a QR code or a contact file — before you delete.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>If you bought the Pro lifetime pass</h2>
+        <p>
+          Deleting your account does <strong>not</strong> refund the lifetime pass automatically.
+          Refunds follow the <a href="/terms.html?lang=en#refund-en">refund terms</a> (for example, within 7 days of payment),
+          so please request one before you delete your account if you need it.
+          Payment records are kept for 5 years as required by law; if you sign up again with the same Kakao account
+          within that period, the pass applies again.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>If you have a subscription in the app</h2>
+        <p>
+          Deleting your account <strong>does not cancel your store subscription.</strong>
+          Cancel it yourself so you are not charged again:
+        </p>
+        <ul>
+          <li><strong>Android</strong> — Google Play app → profile → Payments &amp; subscriptions → Subscriptions</li>
+          <li><strong>iPhone / iPad</strong> — Settings → [your name] → Subscriptions</li>
+        </ul>
+      </section>
+
+      <p class="k-muted">
+        For the full picture, see our <a href="/privacy.html">Privacy Policy</a>.
+      </p>
+    </div>
+
+  </main>
+
+  <footer class="k-footer">
+    <span class="k-muted">© 2026 [[사업자명]] · 명함QR / Businesscard QR</span>
+  </footer>
+</div>
+
+</body>
+</html>

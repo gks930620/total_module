@@ -1,5 +1,6 @@
 package com.businesscard.common.security;
 
+import com.businesscard.auth.support.AuthCookies;
 import com.businesscard.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -7,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,6 +25,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthCookies authCookies;
     private final UserRepository userRepository;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -68,13 +71,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * 토큰을 찾는 순서: <b>Authorization 헤더 → 액세스 쿠키</b>.
+     *
+     * <p>두 채널을 모두 받는다 — 앱은 헤더(Bearer), 웹(PWA)은 HttpOnly 쿠키를 쓴다.
+     * 헤더를 먼저 보는 이유는 명시적으로 토큰을 실어 보낸 요청의 의도를 존중하기 위해서다
+     * (브라우저는 쿠키를 자동으로 붙이지만, 헤더는 호출부가 일부러 넣은 값이다).
+     *
+     * <p>설계: {@code 설계/웹앱_전환_설계.md} §3-3.
+     */
     private String resolveToken(HttpServletRequest request) {
+        return bearerToken(request).or(() -> authCookies.readAccess(request)).orElse(null);
+    }
+
+    private Optional<String> bearerToken(HttpServletRequest request) {
         String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            return null;
+            return Optional.empty();
         }
-
         String token = authorizationHeader.substring(7).trim();
-        return token.isEmpty() ? null : token;
+        return token.isEmpty() ? Optional.empty() : Optional.of(token);
     }
 }

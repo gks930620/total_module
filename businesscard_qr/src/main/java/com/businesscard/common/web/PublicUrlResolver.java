@@ -1,4 +1,4 @@
-package com.businesscard.card.support;
+package com.businesscard.common.web;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

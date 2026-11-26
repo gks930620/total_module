@@ -32,8 +32,13 @@ spring:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    # 운영에서는 끄는 것을 권장한다 — Railway env 에 SPRINGDOC_SWAGGER_UI_ENABLED=false.
+    # 인증이 필요한 API 라 데이터가 새지는 않지만, 엔드포인트·DTO 구조(특히 결제)를
+    # 굳이 공개할 이유가 없다. 로컬은 기본 켜짐이라 개발 편의는 그대로다.
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
   api-docs:
     path: /v3/api-docs
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
 
 management:
   endpoints:
@@ -62,14 +67,53 @@ app:
     secret-key: ${BUCKET_SECRET_ACCESS_KEY:}
     name: ${BUCKET_NAME:}
     region: ${BUCKET_REGION:us-east-1}
+  cookie:
+    # 웹 세션 쿠키에 Secure 를 붙일지. 운영(HTTPS)은 true, 로컬 http 개발은 false.
+    # 로컬에서 true 면 브라우저가 쿠키를 저장하지 않아 로그인이 안 된다.
+    secure: ${APP_COOKIE_SECURE:false}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:8080}
   jwt:
     secret: ${APP_JWT_SECRET:local-dev-secret-key-change-this-before-production-1234567890}
     access-token-validity-seconds: ${APP_JWT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
     refresh-token-validity-seconds: ${APP_JWT_REFRESH_TOKEN_VALIDITY_SECONDS:1209600}
+  billing:
+    # 무료 플랜 명함 등록 한도. 이미 만든 명함은 이 값이 줄어도 계속 볼 수 있다(등록에만 적용).
+    free-card-limit: ${APP_BILLING_FREE_CARD_LIMIT:3}
+    # 프로 권한을 주는 상품 ID(양 스토어 동일). 콤마로 여러 개.
+    pro-product-ids: ${APP_BILLING_PRO_PRODUCT_IDS:pro_monthly}
+    google:
+      # 서비스 계정 JSON 전체를 넣는다. 비어 있으면 Google 검증이 꺼지고 /verify 는 503 이다.
+      service-account-json: ${APP_BILLING_GOOGLE_SERVICE_ACCOUNT_JSON:}
+      package-name: ${APP_BILLING_ANDROID_PACKAGE_NAME:}
+    apple:
+      issuer-id: ${APP_BILLING_APPLE_ISSUER_ID:}
+      key-id: ${APP_BILLING_APPLE_KEY_ID:}
+      # App Store Connect API 개인키(.p8) 내용.
+      private-key: ${APP_BILLING_APPLE_PRIVATE_KEY:}
+      bundle-id: ${APP_BILLING_APPLE_BUNDLE_ID:}
+      # 운영은 production, 샌드박스 테스트는 sandbox.
+      environment: ${APP_BILLING_APPLE_ENVIRONMENT:production}
+    # ── 웹 결제: 프로 평생 이용권(한 번 결제하면 영구) — 설계 설계/웹결제_설계.md ──
+    web:
+      # 가격(원). 바꿔도 이미 만든 주문의 금액은 그대로다.
+      lifetime-price: ${APP_BILLING_LIFETIME_PRICE:9900}
+    toss:
+      # 토스페이먼츠 개발자센터 > API 키 > "API 개별 연동 키". 위젯 키(…_gck_/…_gsk_)가 아니다.
+      # 둘 중 하나라도 비어 있으면 결제가 꺼진다(프로 화면에 "결제 준비 중").
+      # 테스트: test_ck_… / test_sk_…  운영: live_ck_… / live_sk_…
+      client-key: ${APP_BILLING_TOSS_CLIENT_KEY:}
+      secret-key: ${APP_BILLING_TOSS_SECRET_KEY:}
+      api-base-url: ${APP_BILLING_TOSS_API_BASE_URL:https://api.tosspayments.com}
   kakao:
     user-info-uri: ${APP_KAKAO_USER_INFO_URI:https://kapi.kakao.com/v2/user/me}
     # 발급 앱 검증용(선택). 비워두면 검증을 건너뛴다.
     expected-app-id: ${APP_KAKAO_EXPECTED_APP_ID:}
     token-info-uri: ${APP_KAKAO_TOKEN_INFO_URI:https://kapi.kakao.com/v1/user/access_token_info}
+    # ── 웹 로그인(인가 코드 방식) — 설계 웹앱_전환_설계.md §3-4 ──
+    # 카카오 개발자센터 > 앱 키 > REST API 키. 비어 있으면 웹 로그인 버튼이 로그인 화면으로 되돌린다.
+    rest-api-key: ${APP_KAKAO_REST_API_KEY:}
+    # 보안 > Client Secret 을 켰을 때만. 켜 두는 것을 권장한다(코드 교환에 비밀값이 필요해진다).
+    client-secret: ${APP_KAKAO_CLIENT_SECRET:}
+    authorize-uri: ${APP_KAKAO_AUTHORIZE_URI:https://kauth.kakao.com/oauth/authorize}
+    token-uri: ${APP_KAKAO_TOKEN_URI:https://kauth.kakao.com/oauth/token}

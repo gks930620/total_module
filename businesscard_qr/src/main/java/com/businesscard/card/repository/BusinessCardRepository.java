@@ -1,6 +1,7 @@
 package com.businesscard.card.repository;
 
 import com.businesscard.card.entity.BusinessCardEntity;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,17 @@ public interface BusinessCardRepository extends JpaRepository<BusinessCardEntity
 
     /** 명함 목록 페이징 조회 (정렬은 Pageable 의 Sort 로 지정 — 최신 등록순) */
     Page<BusinessCardEntity> findByUserIdAndIsActiveTrue(String userId, Pageable pageable);
+
+    /** 무료 플랜 한도 판정용. 삭제(비활성)된 명함은 한도를 잡아먹지 않는다. */
+    long countByUserIdAndIsActiveTrue(String userId);
+
+    /**
+     * 회원 탈퇴 시 파기 대상. 비활성(soft delete) 카드도 포함한다 —
+     * 탈퇴는 완전 파기이므로 남겨 둘 이유가 없고, 이미지 파일도 같이 지워야 한다.
+     */
+    List<BusinessCardEntity> findByUserId(String userId);
+
+    void deleteByUserId(String userId);
 
     Optional<BusinessCardEntity> findByIdAndUserIdAndIsActiveTrue(String id, String userId);
 

@@ -46,6 +46,83 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// ── 웹앱(PWA) 빌드 ── 설계 설계/웹앱_전환_설계.md §1. devtool_web/build.gradle 과 같은 방식이다.
+//
+// frontend/ (React+Vite) 를 빌드해 dist/ → src/main/resources/static/ 로 복사하면
+// Spring 이 같은 오리진에서 서빙한다(CORS 없음, SameSite=Strict 세션 쿠키가 그대로 실린다).
+//
+// ⚠️ 환경 무관 빌드 가드: node/npm 이 PATH 에 있을 때만 프론트를 빌드한다.
+// Dockerfile 은 JDK 이미지라 node 가 없다 — 그때는 **커밋된 static 산출물**을 그대로 쓴다.
+// 그래서 프론트를 고치면 로컬에서 빌드해 static/ 까지 커밋해야 배포에 반영된다.
+def frontendDir = file("${projectDir}/frontend")
+def frontendBuildDir = file("${frontendDir}/dist")
+def staticDir = file("${projectDir}/src/main/resources/static")
+def npmExecutable = org.gradle.internal.os.OperatingSystem.current().isWindows() ? "npm.cmd" : "npm"
+
+def npmAvailable = {
+    def path = System.getenv("PATH")
+    if (path == null) return false
+    return path.split(File.pathSeparator).any { dir -> new File(dir, npmExecutable).isFile() }
+}()
+
+def frontendBuildable = frontendDir.exists() && npmAvailable
+
+// 입출력을 선언해 두면 Gradle 이 "바뀐 게 없으면" 건너뛴다(UP-TO-DATE).
+// 선언이 없으면 백엔드만 고쳐도 매번 npm ci·빌드를 처음부터 다시 돌린다.
+def frontendSources = files(
+        "${frontendDir}/src", "${frontendDir}/public", "${frontendDir}/index.html",
+        "${frontendDir}/vite.config.js", "${frontendDir}/package.json", "${frontendDir}/package-lock.json")
+
+tasks.register("frontendInstall", Exec) {
+    workingDir frontendDir
+    commandLine npmExecutable, "ci"
+    inputs.files("${frontendDir}/package.json", "${frontendDir}/package-lock.json")
+    outputs.dir("${frontendDir}/node_modules")
+    onlyIf { frontendBuildable }
+}
+
+// 프론트 단위 테스트(vitest) — 백엔드 test 와 같이 돈다. 둘 중 하나라도 깨지면 빌드가 실패한다.
+tasks.register("frontendTest", Exec) {
+    dependsOn "frontendInstall"
+    workingDir frontendDir
+    commandLine npmExecutable, "test"
+    inputs.files(frontendSources)
+    // 테스트는 결과물이 없어서, 통과 표시 파일을 둬야 Gradle 이 "이미 통과함"을 기억한다.
+    def stamp = file("${buildDir}/frontend-test.stamp")
+    outputs.file(stamp)
+    doLast { stamp.text = new Date().toString() }
+    onlyIf { frontendBuildable }
+}
+
+tasks.register("frontendBuild", Exec) {
+    dependsOn "frontendInstall"
+    workingDir frontendDir
+    commandLine npmExecutable, "run", "build"
+    inputs.files(frontendSources)
+    outputs.dir(frontendBuildDir)
+    onlyIf { frontendBuildable }
+}
+
+// npm 이 있을 때만 static 을 비운다 → node 없는 환경에서 커밋된 산출물이 지워지는 사고 방지.
+tasks.register("cleanFrontendStatic", Delete) {
+    onlyIf { frontendBuildable }
+    delete fileTree(staticDir) {
+        exclude ".gitkeep"
+    }
+}
+
+tasks.register("copyFrontendBuild", Copy) {
+    dependsOn "frontendBuild", "cleanFrontendStatic"
+    from frontendBuildDir
+    into staticDir
+    onlyIf { frontendBuildable }
+}
+
+tasks.named("processResources") {
+    dependsOn "copyFrontendBuild"
+}
+
 tasks.named('test') {
     useJUnitPlatform()
+    dependsOn "frontendTest"
 }

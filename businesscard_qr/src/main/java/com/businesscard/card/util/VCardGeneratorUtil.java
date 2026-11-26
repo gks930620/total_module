@@ -80,11 +80,24 @@ public class VCardGeneratorUtil {
         return value != null && !value.isBlank();
     }
 
+    /**
+     * vCard 값 이스케이프 (RFC 6350 §3.4).
+     *
+     * <p><b>줄바꿈 세 형태를 모두 지운다.</b> 이 파일은 줄을 CRLF 로 잇는데, 값 안에 살아남은
+     * CR 하나만 있어도 파서가 거기서 줄을 끊고 뒤를 <b>새 속성</b>으로 읽는다.
+     * 명함은 QR 로 남에게 공유되므로, 그렇게 되면 공격자가 자기 명함에
+     * {@code \rTEL:010-...} 를 넣어 <b>스캔한 사람의 연락처에 화면에 없던 번호</b>를 심을 수 있다.
+     *
+     * <p>순서가 중요하다 — {@code \r\n} 을 먼저 처리하지 않으면 한 줄바꿈이 {@code \n\n} 두 개가 된다.
+     * 역슬래시도 반드시 가장 먼저 치환해야 뒤에 넣는 이스케이프가 다시 이스케이프되지 않는다.
+     */
     private String escape(String value) {
         return value
                 .replace("\\", "\\\\")
+                .replace("\r\n", "\\n")
+                .replace("\r", "\\n")
+                .replace("\n", "\\n")
                 .replace(";", "\\;")
-                .replace(",", "\\,")
-                .replace("\n", "\\n");
+                .replace(",", "\\,");
     }
 }

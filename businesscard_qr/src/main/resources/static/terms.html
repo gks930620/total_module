@@ -1,0 +1,328 @@
+<!doctype html>
+<!--
+  ============================================================================
+  이용약관(환불 규정 포함) — 유료 상품(프로 평생 이용권)을 팔려면 필요하다.
+  토스페이먼츠 가맹 심사도 이 페이지(약관·환불 규정)와 화면 하단의 사업자 정보를 확인한다.
+
+  배포 전에 아래 [[ ]] 자리를 반드시 채울 것 (privacy.html · frontend/src/lib/business.js 와 같은 값):
+    [[사업자명]] [[대표자]] [[사업자등록번호]] [[통신판매업 신고번호]] [[사업자주소]] [[연락처 이메일]]
+
+  ⚠️ 정책 결정이 필요한 곳 — 기본값으로 써 두었으니 확인할 것:
+    · 제7조 환불: "7일 이내 + 무료 한도를 넘겨 쓰지 않았으면 전액" (결제 화면 문구 proRefundNotice 와 같아야 한다)
+    · 제8조 서비스 종료: "구매 후 1년 이내면 전액 환불"
+  시행일은 실제 공개(배포)하는 날로 맞출 것.
+  ============================================================================
+-->
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>이용약관 · 명함QR</title>
+  <meta name="description" content="명함QR(Businesscard QR) 이용약관·환불 규정 / Terms of Service and refund policy">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/design-kit/design-kit.css">
+  <!-- 인라인 스크립트는 CSP(script-src 'self')에 막힌다 — 파일로 싣는다 -->
+  <script src="/legal.js" defer></script>
+  <style>
+    /* 킷에 없는 것만 최소로. 색·치수는 전부 var(--토큰). */
+    .doc h2 { margin: 0 0 var(--sp-4); font-size: var(--t-lg); }
+    .doc p, .doc li { color: var(--muted); line-height: var(--lh); }
+    .doc ol, .doc ul { margin: 0 0 var(--sp-3); padding-left: var(--sp-5); }
+    .doc li { margin-bottom: var(--sp-1); }
+    .doc [hidden] { display: none; }
+    .langbar { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<div class="k-shell">
+
+  <header class="k-topnav">
+    <a class="k-topnav__logo" href="/">명함QR</a>
+    <span class="k-spacer"></span>
+    <nav class="langbar" aria-label="Language">
+      <button class="k-btn k-btn--ghost k-btn--sm" data-set-lang="ko" aria-pressed="true">한국어</button>
+      <button class="k-btn k-btn--ghost k-btn--sm" data-set-lang="en" aria-pressed="false">English</button>
+    </nav>
+  </header>
+
+  <main class="k-main doc">
+
+    <!-- ─────────────────────────── 한국어 ─────────────────────────── -->
+    <div data-lang="ko">
+      <h1 class="k-page-title">이용약관</h1>
+      <p class="k-page-desc">명함QR 서비스를 이용하는 조건과, 유료 상품의 결제·환불 규정을 안내합니다.</p>
+      <p class="k-muted">시행일: 2026년 11월 26일</p>
+
+      <section class="k-section">
+        <h2>제1조 (목적)</h2>
+        <p>
+          이 약관은 [[사업자명]](이하 “회사”)이 제공하는 명함QR(Businesscard QR) 서비스의 이용 조건과 절차,
+          회사와 이용자의 권리·의무를 정합니다.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>제2조 (정의)</h2>
+        <ul>
+          <li><strong>서비스</strong> — 명함을 등록하고 QR 코드·링크로 공유하는 웹 서비스(명함QR)</li>
+          <li><strong>회원</strong> — 카카오 계정으로 로그인해 가입한 사람</li>
+          <li><strong>프로 평생 이용권</strong> — 한 번 결제하면 기간 제한 없이 프로 기능을 이용할 수 있는 유료 상품</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>제3조 (약관의 게시와 변경)</h2>
+        <p>
+          회사는 이 약관을 서비스 화면에 게시합니다. 약관을 바꿀 때는 시행일 <strong>7일 전</strong>부터,
+          이용자에게 불리한 변경은 <strong>30일 전</strong>부터 공지합니다. 바뀐 약관에 동의하지 않으면 탈퇴할 수 있습니다.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>제4조 (회원 가입)</h2>
+        <p>카카오 계정으로 로그인하면 가입됩니다. 만 14세 미만은 가입할 수 없습니다.</p>
+      </section>
+
+      <section class="k-section">
+        <h2>제5조 (서비스 내용)</h2>
+        <ul>
+          <li><strong>무료</strong> — 서비스 화면에 표시한 장수까지 명함을 등록할 수 있습니다.</li>
+          <li><strong>프로 평생 이용권</strong> — 명함을 무제한으로 등록할 수 있습니다.</li>
+          <li>공유한 명함은 링크나 QR 코드를 가진 사람이 로그인 없이 볼 수 있습니다.</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>제6조 (유료 상품과 결제)</h2>
+        <ul>
+          <li>상품명과 가격(부가가치세 포함)은 결제 화면에 표시합니다.</li>
+          <li>결제는 (주)토스페이먼츠의 전자결제 대행을 통해 신용·체크카드 또는 간편결제로 합니다.
+            회사는 카드 번호 등 결제수단 정보를 받거나 저장하지 않습니다.</li>
+          <li>결제가 승인되면 즉시 프로 기능이 적용됩니다.</li>
+          <li>“평생”은 회원 계정이 유지되고 회사가 서비스를 제공하는 동안 <strong>추가 결제 없이</strong> 이용할 수 있다는 뜻입니다.</li>
+        </ul>
+      </section>
+
+      <section class="k-section" id="refund">
+        <h2>제7조 (청약철회와 환불)</h2>
+        <ol>
+          <li>결제일로부터 <strong>7일 이내</strong>에 청약을 철회할 수 있으며, 프로 기능을 사용하지 않았다면
+            (무료 한도를 넘는 명함을 등록하지 않았다면) <strong>결제 금액 전액</strong>을 환불합니다.</li>
+          <li>프로 기능을 사용한 뒤에는 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항 제5호에 따라
+            디지털콘텐츠의 제공이 시작된 것으로 보아 청약철회가 제한될 수 있습니다.
+            회사는 이 사실을 결제 화면에 미리 표시하고, 무료 플랜으로 서비스를 먼저 써 볼 수 있게 합니다.</li>
+          <li>서비스의 하자 등 회사의 책임 있는 사유로 이용하지 못한 경우에는 사용 여부와 관계없이 환불합니다.</li>
+          <li><strong>신청 방법</strong> — [[연락처 이메일]] 로 가입한 카카오 계정의 이메일과 결제일을 적어 보내 주세요.
+            확인 후 <strong>3영업일 이내</strong>에 결제를 취소하며, 카드사 사정에 따라 환불 반영까지 며칠 더 걸릴 수 있습니다.</li>
+          <li>환불이 끝나면 프로 평생 이용권은 사라지고 무료 플랜으로 돌아갑니다.
+            이미 만든 명함은 그대로 볼 수 있지만, 무료 한도를 넘는 새 명함은 만들 수 없습니다.</li>
+        </ol>
+      </section>
+
+      <section class="k-section">
+        <h2>제8조 (서비스의 변경과 종료)</h2>
+        <p>
+          회사는 운영상·기술상 필요에 따라 서비스를 바꿀 수 있으며, 중요한 변경은 미리 공지합니다.
+          서비스를 종료할 때는 <strong>최소 30일 전</strong>에 공지하고, 구매일로부터 1년이 지나지 않은
+          프로 평생 이용권은 결제 금액 전액을 환불합니다.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>제9조 (회원 탈퇴)</h2>
+        <ul>
+          <li>회원은 언제든지 서비스 안에서 탈퇴할 수 있으며, 계정과 명함은 즉시 삭제됩니다.</li>
+          <li>탈퇴해도 프로 평생 이용권은 <strong>자동으로 환불되지 않습니다.</strong> 환불은 제7조를 따릅니다.</li>
+          <li>결제 기록은 관련 법령에 따라 5년간 보관합니다. 그 기간 안에 같은 카카오 계정으로 다시 가입하면
+            구매한 이용권이 다시 적용됩니다.</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>제10조 (이용자의 의무)</h2>
+        <ul>
+          <li>다른 사람의 정보를 동의 없이 명함으로 등록하거나, 법령에 어긋나는 정보를 게시해서는 안 됩니다.</li>
+          <li>공유한 명함 링크를 누구에게 전할지는 이용자가 정합니다. 공개하고 싶지 않은 정보는 명함에 적지 말아 주세요.</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>제11조 (책임의 제한)</h2>
+        <p>
+          회사는 천재지변 등 불가항력으로 서비스를 제공할 수 없는 경우, 또는 이용자가 스스로 공개한 정보로 생긴 문제에 대해
+          회사의 고의나 과실이 없는 한 책임을 지지 않습니다.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>제12조 (분쟁 해결)</h2>
+        <p>
+          이 약관은 대한민국 법을 따릅니다. 분쟁이 생기면 회사와 이용자가 성실히 협의하며,
+          이용자는 한국소비자원(국번없이 1372) 등 소비자분쟁조정기관에 조정을 신청할 수 있습니다.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>사업자 정보</h2>
+        <div class="k-tablewrap">
+          <table class="k-table">
+            <tbody>
+            <tr><th>상호</th><td>[[사업자명]]</td></tr>
+            <tr><th>대표자</th><td>[[대표자]]</td></tr>
+            <tr><th>사업자등록번호</th><td>[[사업자등록번호]]</td></tr>
+            <tr><th>통신판매업 신고번호</th><td>[[통신판매업 신고번호]]</td></tr>
+            <tr><th>주소</th><td>[[사업자주소]]</td></tr>
+            <tr><th>이메일</th><td>[[연락처 이메일]]</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="k-muted">
+          개인정보 처리에 대해서는 <a href="/privacy.html"><strong>개인정보처리방침</strong></a>을 확인해 주세요.
+        </p>
+      </section>
+    </div>
+
+    <!-- ─────────────────────────── English ─────────────────────────── -->
+    <div data-lang="en" hidden>
+      <h1 class="k-page-title">Terms of Service</h1>
+      <p class="k-page-desc">The conditions for using Businesscard QR, and how payment and refunds work for paid products.</p>
+      <p class="k-muted">Effective: 26 November 2026</p>
+
+      <section class="k-section">
+        <h2>1. Purpose</h2>
+        <p>
+          These terms set out the conditions and procedures for using the Businesscard QR service provided by
+          [[사업자명]] (“we”, “us”), and the rights and obligations of us and our users.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>2. Definitions</h2>
+        <ul>
+          <li><strong>Service</strong> — the web service for creating business cards and sharing them by QR code or link</li>
+          <li><strong>Member</strong> — a person who has signed up by signing in with a Kakao account</li>
+          <li><strong>Pro lifetime pass</strong> — a paid product that unlocks Pro features with a single payment and no time limit</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>3. Changes to these terms</h2>
+        <p>
+          We publish these terms in the service. We announce changes at least <strong>7 days</strong> before they take effect,
+          or <strong>30 days</strong> before for changes that are unfavourable to users. If you do not agree, you may delete your account.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>4. Signing up</h2>
+        <p>You sign up by signing in with a Kakao account. People under 14 may not sign up.</p>
+      </section>
+
+      <section class="k-section">
+        <h2>5. What the service offers</h2>
+        <ul>
+          <li><strong>Free</strong> — create cards up to the number shown in the service.</li>
+          <li><strong>Pro lifetime pass</strong> — create unlimited cards.</li>
+          <li>Anyone who has the link or QR code of a card you shared can view it without signing in.</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>6. Paid products and payment</h2>
+        <ul>
+          <li>The product name and price (VAT included) are shown on the payment screen.</li>
+          <li>Payments are processed by Toss Payments Co., Ltd. by credit/debit card or easy-pay services.
+            We never receive or store your card number or other payment-method details.</li>
+          <li>Pro features apply as soon as the payment is approved.</li>
+          <li>“Lifetime” means you can use Pro <strong>without paying again</strong> for as long as your account exists and we operate the service.</li>
+        </ul>
+      </section>
+
+      <section class="k-section" id="refund-en">
+        <h2>7. Cancellation and refunds</h2>
+        <ol>
+          <li>You may cancel within <strong>7 days</strong> of payment. If you have not used Pro features
+            (that is, you have not created cards beyond the free limit), we refund the <strong>full amount</strong>.</li>
+          <li>Once you have used Pro features, cancellation may be limited under Article 17(2)(5) of the Korean
+            Act on Consumer Protection in Electronic Commerce, because supply of the digital content has begun.
+            We show this on the payment screen in advance, and the free plan lets you try the service first.</li>
+          <li>If you could not use the service because of a fault on our side, we refund regardless of use.</li>
+          <li><strong>How to request</strong> — email [[연락처 이메일]] with the email address of your Kakao account and the payment date.
+            We cancel the payment within <strong>3 business days</strong> of confirming it; your card issuer may take a few more days to show the refund.</li>
+          <li>After a refund, the Pro lifetime pass is removed and you return to the free plan.
+            Cards you already created remain visible, but you cannot create new cards beyond the free limit.</li>
+        </ol>
+      </section>
+
+      <section class="k-section">
+        <h2>8. Changes to and closure of the service</h2>
+        <p>
+          We may change the service for operational or technical reasons and announce significant changes in advance.
+          If we close the service, we will announce it at least <strong>30 days</strong> beforehand and refund in full
+          any Pro lifetime pass purchased less than one year earlier.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>9. Deleting your account</h2>
+        <ul>
+          <li>You can delete your account in the service at any time; your account and cards are deleted immediately.</li>
+          <li>Deleting your account does <strong>not</strong> refund a Pro lifetime pass automatically. Refunds follow section 7.</li>
+          <li>Payment records are kept for 5 years as required by law. If you sign up again with the same Kakao account
+            within that period, the pass you bought applies again.</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>10. Your responsibilities</h2>
+        <ul>
+          <li>Do not register other people’s details without their consent, or post unlawful content.</li>
+          <li>You decide whom to send your card link to. Leave out anything you do not want shared.</li>
+        </ul>
+      </section>
+
+      <section class="k-section">
+        <h2>11. Limitation of liability</h2>
+        <p>
+          Unless we acted intentionally or negligently, we are not liable where the service cannot be provided because of
+          force majeure, or for problems caused by information you chose to make public.
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>12. Disputes</h2>
+        <p>
+          These terms are governed by the laws of the Republic of Korea. We will try to resolve any dispute in good faith,
+          and you may apply for mediation to a consumer dispute body such as the Korea Consumer Agency (1372).
+        </p>
+      </section>
+
+      <section class="k-section">
+        <h2>Business information</h2>
+        <div class="k-tablewrap">
+          <table class="k-table">
+            <tbody>
+            <tr><th>Company</th><td>[[사업자명]]</td></tr>
+            <tr><th>Representative</th><td>[[대표자]]</td></tr>
+            <tr><th>Business registration no.</th><td>[[사업자등록번호]]</td></tr>
+            <tr><th>Mail-order business no.</th><td>[[통신판매업 신고번호]]</td></tr>
+            <tr><th>Address</th><td>[[사업자주소]]</td></tr>
+            <tr><th>Email</th><td>[[연락처 이메일]]</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="k-muted">
+          For how we handle personal data, see our <a href="/privacy.html"><strong>Privacy Policy</strong></a>.
+        </p>
+      </section>
+    </div>
+
+  </main>
+
+  <footer class="k-footer">
+    <span class="k-muted">© 2026 [[사업자명]] · 명함QR / Businesscard QR</span>
+  </footer>
+</div>
+
+</body>
+</html>

@@ -2,15 +2,10 @@ package com.businesscard.card.controller;
 
 import com.businesscard.card.dto.BusinessCardIdResponse;
 import com.businesscard.card.dto.BusinessCardResponse;
-import com.businesscard.card.dto.DownloadUrlResponse;
 import com.businesscard.card.service.BusinessCardService;
-import com.businesscard.card.service.DownloadFile;
 import com.businesscard.common.dto.ApiResponse;
 import com.businesscard.common.dto.PageResponse;
-import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 명함 CRUD. 파일 내려받기는 {@link BusinessCardDownloadController} 에 있다.
+ */
 @RestController
 @RequestMapping("/api/business-cards")
 @RequiredArgsConstructor
@@ -59,7 +57,8 @@ public class BusinessCardController {
             @RequestPart("payload") String payload,
             @RequestPart(value = "businessCardImage", required = false) MultipartFile businessCardImage
     ) {
-        BusinessCardIdResponse data = businessCardService.createBusinessCard(authentication.getName(), payload, businessCardImage);
+        BusinessCardIdResponse data =
+                businessCardService.createBusinessCard(authentication.getName(), payload, businessCardImage);
         return ResponseEntity.ok(ApiResponse.success("Business card created", data));
     }
 
@@ -70,7 +69,8 @@ public class BusinessCardController {
             @RequestPart("payload") String payload,
             @RequestPart(value = "businessCardImage", required = false) MultipartFile businessCardImage
     ) {
-        BusinessCardIdResponse data = businessCardService.updateBusinessCard(authentication.getName(), cardId, payload, businessCardImage);
+        BusinessCardIdResponse data = businessCardService.updateBusinessCard(
+                authentication.getName(), cardId, payload, businessCardImage);
         return ResponseEntity.ok(ApiResponse.success("Business card updated", data));
     }
 
@@ -86,57 +86,8 @@ public class BusinessCardController {
     // 조회수 증가는 공개 엔드포인트다. 명함을 QR로 스캔한 비로그인 방문자가
     // 조회수를 올릴 수 있어야 하므로 인증(Authentication)을 요구하지 않는다.
     @PostMapping("/{cardId}/view-count")
-    public ResponseEntity<ApiResponse<Void>> incrementViewCount(
-            @PathVariable String cardId
-    ) {
+    public ResponseEntity<ApiResponse<Void>> incrementViewCount(@PathVariable String cardId) {
         businessCardService.incrementViewCount(cardId);
         return ResponseEntity.ok(ApiResponse.success("View count increased", null));
-    }
-
-    @GetMapping("/{cardId}/vcf-download-url")
-    public ResponseEntity<ApiResponse<DownloadUrlResponse>> getVcfDownloadUrl(
-            Authentication authentication,
-            @PathVariable String cardId
-    ) {
-        DownloadUrlResponse data = businessCardService.generateVcfDownloadUrl(authentication.getName(), cardId);
-        return ResponseEntity.ok(ApiResponse.success("VCF download URL issued", data));
-    }
-
-    @GetMapping("/{cardId}/image-download-url")
-    public ResponseEntity<ApiResponse<DownloadUrlResponse>> getImageDownloadUrl(
-            Authentication authentication,
-            @PathVariable String cardId
-    ) {
-        DownloadUrlResponse data = businessCardService.generateImageDownloadUrl(authentication.getName(), cardId);
-        return ResponseEntity.ok(ApiResponse.success("Image download URL issued", data));
-    }
-
-    @GetMapping("/{cardId}/downloads/vcf")
-    public ResponseEntity<byte[]> downloadVcf(
-            @PathVariable String cardId,
-            @RequestParam("token") String token
-    ) {
-        DownloadFile file = businessCardService.downloadVcf(cardId, token);
-        return downloadResponse(file);
-    }
-
-    @GetMapping("/{cardId}/downloads/image")
-    public ResponseEntity<byte[]> downloadImage(
-            @PathVariable String cardId,
-            @RequestParam("token") String token
-    ) {
-        DownloadFile file = businessCardService.downloadImage(cardId, token);
-        return downloadResponse(file);
-    }
-
-    private ResponseEntity<byte[]> downloadResponse(DownloadFile file) {
-        ContentDisposition contentDisposition = ContentDisposition.attachment()
-                .filename(file.fileName(), StandardCharsets.UTF_8)
-                .build();
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
-                .contentType(MediaType.parseMediaType(file.contentType()))
-                .body(file.bytes());
     }
 }

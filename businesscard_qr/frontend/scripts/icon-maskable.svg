@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 마스커블 아이콘 원본. 안드로이드·iOS 가 원·둥근사각형 등 제 모양으로 잘라 쓰므로
+       ① 배경은 모서리 없이 꽉 채우고 ② 그림은 가운데 80% 안전 영역 안에 들어오게 85% 로 줄였다.
+       그림 자체는 public/icons/favicon.svg 와 같다. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d5efc"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(0.85) translate(-256 -256)">
+    <rect x="88" y="150" width="336" height="212" rx="28" fill="#ffffff"/>
+    <rect x="124" y="206" width="120" height="22" rx="11" fill="#6d5efc"/>
+    <rect x="124" y="244" width="88" height="16" rx="8" fill="#c4b8fd"/>
+    <rect x="124" y="290" width="104" height="16" rx="8" fill="#c4b8fd"/>
+    <g fill="#2b2745">
+      <rect x="280" y="200" width="48" height="48" rx="8"/>
+      <rect x="344" y="200" width="48" height="48" rx="8"/>
+      <rect x="280" y="264" width="48" height="48" rx="8"/>
+    </g>
+    <g fill="#ffffff">
+      <rect x="292" y="212" width="24" height="24" rx="4"/>
+      <rect x="356" y="212" width="24" height="24" rx="4"/>
+      <rect x="292" y="276" width="24" height="24" rx="4"/>
+    </g>
+    <g fill="#2b2745">
+      <rect x="298" y="218" width="12" height="12" rx="2"/>
+      <rect x="362" y="218" width="12" height="12" rx="2"/>
+      <rect x="298" y="282" width="12" height="12" rx="2"/>
+      <rect x="344" y="264" width="12" height="12" rx="2"/>
+      <rect x="380" y="264" width="12" height="12" rx="2"/>
+      <rect x="362" y="282" width="12" height="12" rx="2"/>
+      <rect x="344" y="300" width="12" height="12" rx="2"/>
+      <rect x="380" y="300" width="12" height="12" rx="2"/>
+    </g>
+  </g>
+</svg>
